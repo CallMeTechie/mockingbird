@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared test helpers. Sourced by every tests/run-*.sh. Plain bash, no framework.
 
 TESTS_RUN=0

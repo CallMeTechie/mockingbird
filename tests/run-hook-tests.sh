@@ -2,6 +2,7 @@
 # Hook layer: path detection, project root, state bookkeeping, locking,
 # and the end-to-end stdin -> stdout behaviour of detect-design-context.sh.
 set -u
+# shellcheck disable=SC1007  # CDPATH= is a deliberate empty assignment
 HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 ROOT="$(dirname -- "$HERE")"
 . "$HERE/_helper.sh"

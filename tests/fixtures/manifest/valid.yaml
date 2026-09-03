@@ -1,0 +1,91 @@
+schema: mockingbird/1
+project: orderdesk
+revision: 3
+updated: 2026-09-03
+design_system: docs/design/design-system.md
+mockups_index: docs/design/mockups/index.html
+tokens_css: docs/design/mockups/tokens.css
+
+changelog:
+  - rev: 3
+    date: 2026-09-03
+    summary: Leerzustand ergänzt
+    touched: [UI-ORDERS-TABLE, UI-ORDERS-EMPTY]
+
+adapters:
+  web: { locator: attribute, attribute: data-ui-id, visual_check: false }
+primary_adapter: web
+
+screens:
+  - id: UI-ORDERS
+    kind: page
+    title: Offene Bestellungen
+    artboard: docs/design/mockups/ui-orders.html
+    uses: [UI-SHELL-NAV]
+    elements:
+      - id: UI-ORDERS-TABLE
+        type: table
+        label: Tabelle offener Bestellungen
+        status: required
+        verify: required
+        data_source: "GET /api/v1/orders?status=open"
+        semantic_anchor:
+          means: Eine Zeile je Bestellung mit Status ungleich versendet.
+          concept: order
+          aliases: [orders, bestellung]
+          not: [invoice, shipment]
+        columns:
+          - { key: promised_delivery_at, label: Lieferdatum, anchor: "Zugesagtes Datum, nicht das Bestelldatum." }
+        states:
+          - { id: default }
+          - { id: loading, copy: "Skeleton-Zeilen, keine Spinner-Vollfläche." }
+          - { id: empty, ref: UI-ORDERS-EMPTY }
+          - { id: error }
+        locators:
+          web: "[data-ui-id='UI-ORDERS-TABLE']"
+
+      - id: UI-ORDERS-EMPTY
+        type: empty
+        label: Leerzustand der Bestellliste
+        status: required
+        verify: required
+        data_source: static
+        semantic_anchor:
+          means: Bestätigung, dass nichts offen ist.
+        states:
+          - { id: default }
+
+      - id: UI-ORDERS-EXPORT
+        type: action
+        label: Exportieren
+        status: deferred
+        deferred_reason: "(2026-09-03) erst nach dem ersten Kundenfeedback"
+        verify: skip
+        reason: "(2026-09-03) noch nicht gebaut"
+        data_source: static
+        states:
+          - { id: default }
+
+  - id: UI-SHELL
+    kind: shared
+    title: Anwendungsrahmen
+    artboard: docs/design/mockups/ui-shell.html
+    elements:
+      - id: UI-SHELL-NAV
+        type: nav
+        label: Hauptnavigation
+        status: required
+        verify: required
+        data_source: static
+        semantic_anchor:
+          means: Die vier Arbeitsbereiche in fester Reihenfolge.
+        states:
+          - { id: default }
+          - { id: selected }
+
+allocations:
+  - spec: docs/superpowers/specs/2026-09-03-orders-design.md
+    owns: [UI-ORDERS, UI-SHELL]
+    consumes: []
+
+retired: []
