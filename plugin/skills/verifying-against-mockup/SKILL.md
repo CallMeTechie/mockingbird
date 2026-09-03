@@ -60,8 +60,10 @@ bauen — genau der Grund, warum preflight-Stil hier gewählt wurde.
 
 ## Schritt 4 — Deterministische Nachbereitung je Dispatch
 
-Für jeden `semantic`- und `flow`-Dispatch, **bevor** seine Befunde in die
-Konsolidierung einfließen:
+Aus jeder Dispatch-Antwort **nur den Block** zwischen `MB-SEAM`/`MB-COVERAGE`
+und `END` übernehmen — Reviewer setzen gelegentlich einen Satz Prosa davor
+(im ersten Live-Lauf beobachtet). Dann für jeden `semantic`- und
+`flow`-Dispatch, **bevor** seine Befunde in die Konsolidierung einfließen:
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/scripts/mockingbird-scope.sh --check-seam <dispatch-output> --root <projekt>

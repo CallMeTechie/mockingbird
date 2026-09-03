@@ -55,7 +55,10 @@ mode_recall() {
 	[ -f "$findings" ] && [ -f "$golden" ] || { echo "no such file" >&2; exit 2; }
 	local ngold nfind credits
 	ngold="$(jq 'length' "$golden")"
-	nfind="$(jq '[.[] | select(true)] | length' "$findings")"
+	# Precision denominator: flagged findings only. An "ok" line is the reviewer
+	# confirming an element, not a claim that can be a false positive -- counting
+	# it made a fully-reviewed run look imprecise for reporting good news.
+	nfind="$(jq '[.[] | select(.class != "ok")] | length' "$findings")"
 	credits="$(_match_credits "$findings" "$golden" | awk '{s+=$1} END{printf "%.4f", s+0}')"
 	local recall precision f1
 	if [ "$ngold" -eq 0 ]; then recall="1.0000"; else
@@ -114,6 +117,12 @@ self_test() {
 	OUT="$(mode_recall "$tmp/f1.json" "$tmp/g1.json")"; RC=$?
 	[ "$OUT" = "recall=1.0000 precision=1.0000 f1=1.0000" ] && [ "$RC" -eq 0 ] \
 		&& echo "self-test: PASS  perfect recall" || { echo "self-test: FAIL  perfect recall: $OUT rc=$RC"; fail=1; }
+
+	# "ok" findings never count against precision.
+	printf '[{"element":"UI-A","stage":"semantic","class":"violated","terminal":"f.ts:1"},{"element":"UI-B","stage":"structure","class":"ok"}]' > "$tmp/f1b.json"
+	OUT="$(mode_recall "$tmp/f1b.json" "$tmp/g1.json")"
+	[ "$OUT" = "recall=1.0000 precision=1.0000 f1=1.0000" ] \
+		&& echo "self-test: PASS  ok findings do not hurt precision" || { echo "self-test: FAIL  ok precision: $OUT"; fail=1; }
 
 	# Partial credit: same element/stage, wrong class.
 	printf '[{"element":"UI-A","stage":"semantic","class":"partial"}]' > "$tmp/f2.json"

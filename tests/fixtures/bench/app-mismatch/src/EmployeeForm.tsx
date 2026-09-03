@@ -79,9 +79,9 @@ function NameField() {
 // the most common flow-stage finding.
 // Golden: UI-EMP-SAVE | flow | violated
 function SaveButton() {
-  // hardcoded raw color instead of the design token --color-accent
+  // hardcoded raw color identical to the design token --color-accent (#2f5bd7)
   // DEVIATION (tokens/violated). Golden: file-level, tokens stage.
-  return <button data-ui-id="UI-EMP-SAVE" style={{ background: "#ff00aa" }}>Speichern</button>;
+  return <button data-ui-id="UI-EMP-SAVE" style={{ background: "#2f5bd7" }}>Speichern</button>;
 }
 
 // DEVIATION (states/partial): the manifest declares a "default" and an
@@ -92,10 +92,10 @@ export function EmployeeForm() {
     <form>
       <DepartmentField />
       <LocationField />
-      <CostCenterField />
       <RoleField />
       <NameField />
       <SaveButton />
+      <CostCenterField />
     </form>
   );
 }

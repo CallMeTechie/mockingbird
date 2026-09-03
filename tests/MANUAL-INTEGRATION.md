@@ -105,6 +105,10 @@ ohne dass ein Manifest existiert.
 
 ## 9. Der Kernfall — semantische Plausibilität
 
+*Stand 2026-09-03: einmal live gefahren (mit Ersatz-Reviewern statt
+`mockingbird:reviewer`), Ergebnis in `tests/bench/RESULTS.md`: Recall 1.0,
+0 False Positives, 0 Halluzinationen. Mit dem echten Agenten noch offen.*
+
 `/design-verify` gegen `tests/fixtures/bench/app-mismatch/` laufen lassen
 (Manifest + Code liegen bereit, siehe `tests/fixtures/bench/`).
 

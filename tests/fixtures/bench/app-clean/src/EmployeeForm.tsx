@@ -4,6 +4,10 @@ import { useCostCenters } from "./hooks/useCostCenters";
 import { useJobTitles } from "./hooks/useJobTitles";
 import { useBillingProfile } from "./hooks/useBillingProfile";
 import { t } from "./i18n";
+import { useState } from "react";
+import { designTokens } from "./designTokens";
+import { saveEmployee } from "./api/employees";
+import { navigate } from "./router";
 
 // Correct, but named unlike the manifest's vocabulary ("dept" alias, not
 // "department") and sourced through a differently-named hook -- must not be
@@ -83,6 +87,7 @@ function SaveButton() {
   async function handleSave() {
     try {
       await saveEmployee();
+      navigate("/employees"); // back to the list, as the manifest says
     } catch (e) {
       setError(String(e));
     }
@@ -103,10 +108,10 @@ export function EmployeeForm() {
     <form>
       <DeptField />
       <OfficeField />
-      <CostCenterField />
       <RoleField />
       <NameField />
       <SaveButton />
+      <CostCenterField />
     </form>
   );
 }
