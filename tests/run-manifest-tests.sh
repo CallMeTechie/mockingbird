@@ -29,7 +29,7 @@ strip_block() {
 echo "== mb_manifest_to_tsv: shape and content =="
 TSV="$(mb_manifest_to_tsv "$VALID")"
 check "one line per element" "4" "$(printf '%s\n' "$TSV" | wc -l | tr -d ' ')"
-check "17 tab separated fields" "17" "$(printf '%s' "$TSV" | head -n1 | awk -F'\t' '{print NF}')"
+check "18 tab separated fields" "18" "$(printf '%s' "$TSV" | head -n1 | awk -F'\t' '{print NF}')"
 ROW="$(printf '%s\n' "$TSV" | grep -F 'UI-ORDERS-TABLE')"
 check "screen id" "UI-ORDERS" "$(mb_tsv_field "$ROW" "$MB_F_SCREEN_ID")"
 check "element type" "table" "$(mb_tsv_field "$ROW" "$MB_F_ELEMENT_TYPE")"
@@ -42,6 +42,17 @@ DROW="$(printf '%s\n' "$TSV" | grep -F 'UI-ORDERS-EXPORT')"
 check "deferred_reason captured" "(2026-09-03) erst nach dem ersten Kundenfeedback" "$(mb_tsv_field "$DROW" "$MB_F_DEFERRED_REASON")"
 check "skip reason captured" "(2026-09-03) noch nicht gebaut" "$(mb_tsv_field "$DROW" "$MB_F_SKIP_REASON")"
 check "missing file -> 3" "3" "$(mb_manifest_to_tsv "$SANDBOX/nope.yaml" >/dev/null 2>&1; echo $?)"
+check "screen uses: captured on every element of that screen" "UI-SHELL-NAV" "$(mb_tsv_field "$ROW" "$MB_F_SCREEN_USES")"
+check "screen without uses: -> -" "-" "$(printf '%s\n' "$TSV" | awk -F'\t' -v c="$MB_F_SCREEN_USES" '$4=="UI-SHELL-NAV"{print $c}')"
+
+echo "== mb_manifest_allocations =="
+ALLOC="$(mb_manifest_allocations "$VALID")"
+check "one allocation line" "1" "$(printf '%s\n' "$ALLOC" | grep -c .)"
+check "allocation spec path" "docs/superpowers/specs/2026-09-03-orders-design.md" "$(printf '%s\n' "$ALLOC" | cut -f1)"
+check "allocation owns" "UI-ORDERS,UI-SHELL" "$(printf '%s\n' "$ALLOC" | cut -f2)"
+check "allocation empty consumes -> -" "-" "$(printf '%s\n' "$ALLOC" | cut -f3)"
+NOALLOC="$SANDBOX/noalloc.yaml"; sed '/^allocations:/,/^retired:/{/^retired:/!d}' "$VALID" > "$NOALLOC"
+check "no allocations -> empty" "" "$(mb_manifest_allocations "$NOALLOC")"
 
 echo "== fence in an unrelated markdown-ish comment does not confuse the parser =="
 # (documents that this parser only ever reads .yaml — no fence handling needed
@@ -107,5 +118,11 @@ MB_VALIDATE_ROOT="$SANDBOX" check_rc "present artboard (with MB_VALIDATE_ROOT)" 
 check_rc "no MB_VALIDATE_ROOT skips artboard check" 0 mb_manifest_validate "$F"
 
 check_rc "missing manifest file" 3 mb_manifest_validate "$SANDBOX/nope.yaml"
+
+echo "== cross-references: uses:/allocations must point at real ids =="
+F="$(mutate badusesref.yaml -e 's/uses: \[UI-SHELL-NAV\]/uses: [UI-GHOST]/')"
+check_rc "uses: unknown id" 6 mb_manifest_validate "$F"
+F="$(mutate badallocref.yaml -e 's/owns: \[UI-ORDERS, UI-SHELL\]/owns: [UI-ORDERS, UI-NOPE]/')"
+check_rc "allocations owns unknown id" 6 mb_manifest_validate "$F"
 
 summary "run-manifest-tests"

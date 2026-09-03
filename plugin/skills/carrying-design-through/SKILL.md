@@ -52,12 +52,12 @@ Der Design-Block wird in eine Spec geschrieben oder aktualisiert.
    deckt eine Spec das ganze Manifest ab — kein `--screens`-Filter.
    Mit Zuordnung (`allocations:` im Manifest, von `/design-split` gepflegt):
    nur die `owns`-Screens dieser Spec.
-3. `uses:`-Felder der betroffenen Screens im Manifest **von Hand lesen**
-   (der strikte Parser parst `uses:` bewusst nicht, siehe
-   `plugin/lib/mockingbird-manifest.awk`) und daraus die `--consumes`-Liste
-   bilden: alle referenzierten Element-IDs, die zu einem **anderen**
-   Screen gehören als die in dieser Spec.
-4. `${CLAUDE_PLUGIN_ROOT}/scripts/mb-insert-block.sh <spec-pfad> --root <projekt-root> [--screens ...] [--consumes ...]` ausführen.
+3. Nichts von Hand ableiten: `--spec <repo-relativer Spec-Pfad>` mitgeben.
+   Steht die Spec in `allocations:`, liefern deren `owns`/`consumes` die
+   Screens; sonst gelten alle Screens, und die übernommenen Elemente werden
+   aus den `uses:`-Listen der Screens automatisch bestimmt. Explizite
+   `--screens`/`--consumes` überschreiben beides.
+4. `${CLAUDE_PLUGIN_ROOT}/scripts/mb-insert-block.sh <spec-pfad> --root <projekt-root> --spec <spec-pfad-relativ>` ausführen.
    - Exit 0: geschrieben. Exit 4: schon aktuell, nichts zu tun.
    - Exit 2/3/6: Fehler lesen und beheben (Usage, fehlende Datei,
      Manifest-Validierung) — niemals den Block von Hand nachbauen.

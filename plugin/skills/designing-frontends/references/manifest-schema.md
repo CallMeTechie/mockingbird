@@ -114,3 +114,31 @@ empty-state element).
 `touched` is maintained by the model and can be incomplete — it only suppresses
 unnecessary re-renders, it is never the sole staleness signal. The file hash
 catches every change, recorded or not.
+
+## Schreibform — was der Parser versteht (verbindlich)
+
+mockingbird liest das Manifest ohne `yq` mit einem **strikten Subset-Parser**
+(`plugin/lib/mockingbird-manifest.awk`), der bei allem außerhalb des Subsets
+mit Exit 5 **verweigert statt zu raten**. Ein halb gelesenes Manifest würde
+jede Prüfung danach vergiften. Halte dich deshalb exakt an diese Form:
+
+- **Einrückung: 2 Leerzeichen**, nie Tabs. Screen-Items `  - id:`,
+  Screen-Felder mit 4, Element-Items `      - id:`, Element-Felder mit 8,
+  Kinder von `semantic_anchor:`/`locators:` mit 10 Leerzeichen.
+- **`states:` und `columns:` als einzeilige Flow-Maps:**
+  `- { id: loading, copy: "Skeleton-Zeilen, keine Spinner." }` — **nicht**
+  im Block-Stil über mehrere Zeilen.
+- **Listen inline:** `aliases: [dept, orgUnit]`, `not: [team, group]`,
+  `uses: [UI-SHELL-NAV]`, `owns: [UI-ORDERS]`.
+- **Keine mehrzeiligen Skalare** (`|`, `>`), **keine Anker/Aliase** (`&`,
+  `*`), **keine gequoteten Schlüssel**. Kommas in Werten sind erlaubt, wenn
+  der Wert in `"…"` steht.
+- `semantic_anchor:` ist eine verschachtelte Map (Kinder je eine Zeile),
+  `locators:` ebenso (`web: "[data-ui-id='…']"`).
+- Unbekannte, aber wohlgeformte Skalar-Schlüssel werden ignoriert (vorwärts-
+  kompatibel); ein Verstoß gegen die **Struktur** ist ein Fehler.
+
+Nach jedem Schreiben des Manifests:
+`${CLAUDE_PLUGIN_ROOT}/scripts/mockingbird-scope.sh --validate --root <projekt>` —
+Exit 5 heißt „außerhalb des Subsets", Exit 4 „gültig geparst, aber Regel
+verletzt" (die Meldung nennt welche), 0 heißt fertig.

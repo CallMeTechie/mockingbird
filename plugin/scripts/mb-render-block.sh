@@ -4,16 +4,15 @@
 # Prints the block, markers included, to stdout — mb-insert-block.sh writes it
 # into a file.
 #
-# Usage: mb-render-block.sh --root DIR [--screens ID,ID,...] [--consumes ID,ID,...]
+# Usage: mb-render-block.sh --root DIR [--spec PATH] [--screens ID,ID,...] [--consumes ID,ID,...]
 #   --root       project root (the directory containing docs/design/)
+#   --spec PATH  repo-relative spec path; if the manifest's allocations: has an
+#                entry for it, --screens/--consumes default to its owns/consumes
 #   --screens    screen IDs this spec owns; default: every screen in the
 #                manifest (the single-spec case, before any /design-split)
-#   --consumes   element IDs this spec's screens use but do not own, e.g. a
-#                shared UI-SHELL-NAV pulled in via a screen's `uses:` list.
-#                v0.1 scope: the caller supplies this explicitly (read from
-#                the manifest's `uses:` fields) rather than the script
-#                deriving it, because the strict-subset parser does not parse
-#                `uses:` — see mockingbird-manifest.awk.
+#   --consumes   element IDs this spec's screens use but do not own. Default:
+#                derived from the in-scope screens' `uses:` lists minus the
+#                elements those screens own. Explicit flags always win.
 #
 # Exit: 0 ok · 2 usage error · 3 manifest or a referenced file missing ·
 #       6 manifest fails semantic validation.
@@ -25,13 +24,14 @@ PLUGIN_ROOT="$(dirname -- "$HERE")"
 . "$PLUGIN_ROOT/hooks/mockingbird-hooklib.sh"
 . "$PLUGIN_ROOT/lib/mockingbird-blocklib.sh"
 
-ROOT="" SCREENS="" CONSUMES=""
+ROOT="" SCREENS="" CONSUMES="" SPEC="" CONSUMES_SET=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--root) ROOT="$2"; shift 2 ;;
+		--spec) SPEC="$2"; shift 2 ;;
 		--screens) SCREENS="$2"; shift 2 ;;
-		--consumes) CONSUMES="$2"; shift 2 ;;
-		*) echo "usage: mb-render-block.sh --root DIR [--screens ID,ID] [--consumes ID,ID]" >&2; exit 2 ;;
+		--consumes) CONSUMES="$2"; CONSUMES_SET=1; shift 2 ;;
+		*) echo "usage: mb-render-block.sh --root DIR [--spec PATH] [--screens ID,ID] [--consumes ID,ID]" >&2; exit 2 ;;
 	esac
 done
 [ -n "$ROOT" ] || { echo "usage: --root is required" >&2; exit 2; }
@@ -54,8 +54,25 @@ DHASH="$(mb_design_hash "$ROOT")"
 
 TSV="$(mb_manifest_to_tsv "$MANIFEST")"
 
+# --spec: look the spec up in allocations:, unless explicit flags override.
+if [ -n "$SPEC" ]; then
+	ALLOC="$(mb_manifest_allocations "$MANIFEST" | awk -F'\t' -v s="$SPEC" '$1==s{print; exit}')"
+	if [ -n "$ALLOC" ]; then
+		[ -n "$SCREENS" ] || SCREENS="$(printf '%s' "$ALLOC" | cut -f2)"
+		if [ "$CONSUMES_SET" -eq 0 ]; then
+			CONSUMES="$(printf '%s' "$ALLOC" | cut -f3)"; [ "$CONSUMES" = "-" ] && CONSUMES=""
+			CONSUMES_SET=1
+		fi
+	fi
+fi
 if [ -z "$SCREENS" ]; then
 	SCREENS="$(printf '%s\n' "$TSV" | cut -f"$MB_F_SCREEN_ID" | sort -u | paste -sd, -)"
+fi
+# Default consumes: everything the in-scope screens use but do not own.
+if [ "$CONSUMES_SET" -eq 0 ]; then
+	CONSUMES="$(printf '%s\n' "$TSV" | awk -F'\t' -v screens=",$SCREENS," '
+		index(screens, "," $1 ",") { owned[$4]=1; if ($18 != "-") { n=split($18, u, ","); for (i=1;i<=n;i++) used[u[i]]=1 } }
+		END { for (id in used) if (!(id in owned)) print id }' | sort -u | paste -sd, -)"
 fi
 
 FACTS="<!-- design: manifest=docs/design/manifest.yaml design_rev=$REV design_hash=sha256:$DHASH"
@@ -76,7 +93,7 @@ printf '|----|---------|--------|--------|------------------|\n'
 
 printf '%s\n' "$TSV" | while IFS=$'\t' read -r scr_id _scr_kind _scr_artboard elem_id _elem_type elem_label \
 	elem_status _elem_verify _elem_ds sa_means _sa_concept _sa_aliases sa_not \
-	_states _loc_web _reason_deferred _reason_skip; do
+	_states _loc_web _reason_deferred _reason_skip _uses; do
 	[ -n "$elem_id" ] || continue
 	case ",$SCREENS," in *",$scr_id,"*) ;; *) continue ;; esac
 	anchor="$sa_means"

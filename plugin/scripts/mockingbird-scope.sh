@@ -16,6 +16,8 @@
 #   --tokens                       raw values outside the token file
 #   --check-seam FILE              apply the four anti-hallucination rules to
 #                                   an MB-SEAM block, downgrading as required
+#   --seam-to-coverage FILE --stage semantic|flow
+#                                  turn a checked MB-SEAM block into MB-COVERAGE lines
 #   --coverage FILE                MB-COVERAGE bookkeeping + verdict
 #   --fix-scope                    adapter globs, as an editor allowlist
 #   --self-test                    built-in assertions, no LLM, no fixtures
@@ -32,24 +34,25 @@ PLUGIN_ROOT="$(dirname -- "$HERE")"
 
 usage() {
 	echo "usage: mockingbird-scope.sh <mode> --root DIR [args]" >&2
-	echo "modes: --validate --elements --locate ID --scope --tokens --check-seam FILE --coverage FILE --fix-scope --self-test" >&2
+	echo "modes: --validate --elements --locate ID --scope --tokens --check-seam FILE --seam-to-coverage FILE --stage S --coverage FILE --fix-scope --self-test" >&2
 	exit 2
 }
 
 [ $# -ge 1 ] || usage
 MODE="$1"; shift
 
-ROOT="" SCREEN="" ELEMENT="" SINCE="" SEAM_FILE="" COVERAGE_FILE="" ADAPTER=""
+ROOT="" SCREEN="" ELEMENT="" SINCE="" SEAM_FILE="" COVERAGE_FILE="" ADAPTER="" STAGE=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--root) ROOT="$2"; shift 2 ;;
 		--screen) SCREEN="$2"; shift 2 ;;
 		--since) SINCE="$2"; shift 2 ;;
 		--adapter) ADAPTER="$2"; shift 2 ;;
+		--stage) STAGE="$2"; shift 2 ;;
 		*)
 			case "$MODE" in
 				--locate) [ -z "$ELEMENT" ] && { ELEMENT="$1"; shift; continue; } ;;
-				--check-seam) [ -z "$SEAM_FILE" ] && { SEAM_FILE="$1"; shift; continue; } ;;
+				--check-seam|--seam-to-coverage) [ -z "$SEAM_FILE" ] && { SEAM_FILE="$1"; shift; continue; } ;;
 				--coverage) [ -z "$COVERAGE_FILE" ] && { COVERAGE_FILE="$1"; shift; continue; } ;;
 			esac
 			usage
@@ -57,7 +60,7 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-[ "$MODE" = "--self-test" ] || { [ -n "$ROOT" ] || usage; }
+[ "$MODE" = "--self-test" ] || [ "$MODE" = "--seam-to-coverage" ] || { [ -n "$ROOT" ] || usage; }
 
 MANIFEST="${ROOT:-}/docs/design/manifest.yaml"
 
@@ -173,6 +176,11 @@ case "$MODE" in
 	--check-seam)
 		[ -n "$SEAM_FILE" ] || usage
 		mb_check_seam "$SEAM_FILE" "$ROOT"
+		;;
+
+	--seam-to-coverage)
+		[ -n "$SEAM_FILE" ] && [ -n "$STAGE" ] || usage
+		mb_seam_to_coverage "$SEAM_FILE" "$STAGE"
 		;;
 
 	--coverage)

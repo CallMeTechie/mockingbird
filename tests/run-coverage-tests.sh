@@ -130,6 +130,25 @@ mb_manifest_coverage "$SANDBOX/cov.txt" "$SANDBOX/noreason.yaml" "$SANDBOX" > "$
 check "skip WITHOUT a reason is treated as required" "1" "$RC"
 check "named as a blocker" "1" "$(grep -c 'UI-ORDERS-EXPORT (kein Coverage-Eintrag)' "$SANDBOX/rep.txt")"
 
+echo "-- annotated classes from mb_check_seam are recognized --"
+cov_all_ok > "$SANDBOX/cov.txt"
+sed -i 's/UI-ORDERS-TABLE | structure | ok | -/UI-ORDERS-TABLE | semantic | partial [Locator schwach] | src\/x.tsx:1/' "$SANDBOX/cov.txt"
+mb_manifest_coverage "$SANDBOX/cov.txt" "$MAN" "$SANDBOX" > /dev/null; RC=$?
+check "'partial [Locator schwach]' still counts as partial -> MISMATCH" "1" "$RC"
+
+echo "== mb_seam_to_coverage: the bridge =="
+seam_line A src/Real.tsx:1 - - - src/Real.tsx:5 group violated > "$SANDBOX/s.txt"
+check "violated -> coverage line with terminal as loc" "UI-X | semantic | violated | src/Real.tsx:5" "$(mb_seam_to_coverage "$SANDBOX/s.txt" semantic)"
+seam_line C src/Real.tsx:1 - - - src/Real.tsx:5 group violated > "$SANDBOX/s.txt"
+mb_check_seam "$SANDBOX/s.txt" "$SANDBOX" > "$SANDBOX/s2.txt"
+check "annotation stripped, base class kept" "UI-X | flow | partial | src/Real.tsx:5" "$(mb_seam_to_coverage "$SANDBOX/s2.txt" flow)"
+seam_line A src/Real.tsx:1 - - - - - unverified:dynamic > "$SANDBOX/s.txt"
+check "no terminal -> render used as loc" "UI-X | semantic | unverified:dynamic | src/Real.tsx:1" "$(mb_seam_to_coverage "$SANDBOX/s.txt" semantic)"
+printf 'MB-SEAM\nMALFORMED: junk\nEND\n' > "$SANDBOX/s.txt"
+check "MALFORMED passes through, markers dropped" "MALFORMED: junk" "$(mb_seam_to_coverage "$SANDBOX/s.txt" semantic)"
+check_rc "unknown stage -> 2" 2 mb_seam_to_coverage "$SANDBOX/s.txt" tokens
+check_rc "missing file -> 3" 3 mb_seam_to_coverage "$SANDBOX/nope" semantic
+
 echo "-- fully clean run --"
 cov_all_ok > "$SANDBOX/cov.txt"
 mb_manifest_coverage "$SANDBOX/cov.txt" "$MAN" "$SANDBOX" > "$SANDBOX/rep.txt"; RC=$?

@@ -13,10 +13,8 @@ Argumente: `$ARGUMENTS` = optionaler Pfad zur Spec-Datei, optional
   Datei, abbrechen und nach einem expliziten Pfad fragen.
 - Ohne `--screens`: alle Screens im Manifest (Ein-Spec-Fall, vor jedem
   `/design-split`).
-- Ohne `--consumes`: dieses Skript leitet die Liste nicht selbst ab (der
-  strikte Manifest-Parser parst `uses:` bewusst nicht). Lies `uses:` der
-  betroffenen Screens im Manifest von Hand und bilde daraus die Liste, wie
-  in `carrying-design-through/SKILL.md` (`mode=spec`, Schritt 3) beschrieben.
+- Ohne `--consumes`: wird aus den `uses:`-Listen der Screens abgeleitet
+  (bzw. aus `allocations:`, wenn `--spec` die Spec dort findet).
 
 Folge dem Skill exakt in der dort beschriebenen Reihenfolge (Manifest lesen →
 Screens/Consumes bestimmen → `mb-insert-block.sh` ausführen → Ergebnis

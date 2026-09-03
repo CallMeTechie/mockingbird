@@ -156,7 +156,7 @@ mb_manifest_coverage() {
 	local mismatch=0
 
 	while IFS=$'\t' read -r scr_id _sk _sa elem_id _et _el elem_status elem_verify \
-		_eds _sam _sac _saa _san _states _lw _rd reason_skip; do
+		_eds _sam _sac _saa _san _states _lw _rd reason_skip _uses; do
 		[ -n "$elem_id" ] || continue
 		local required=1
 		if [ "$elem_verify" = "skip" ]; then
@@ -189,6 +189,12 @@ mb_manifest_coverage() {
 			local stage class
 			stage="$(printf '%s' "$cl" | awk -F'\\|' '{f=$2; gsub(/^[ \t]+|[ \t]+$/,"",f); print f}')"
 			class="$(printf '%s' "$cl" | awk -F'\\|' '{f=$3; gsub(/^[ \t]+|[ \t]+$/,"",f); print f}')"
+			# mb_check_seam annotates downgraded classes ("partial [Locator
+			# schwach]", "unverified:no-locator [bad file:line]"). Only the
+			# first word is the class; without this the annotated form matched
+			# neither branch below and was silently ignored -- a downgraded
+			# blocker would have vanished from the verdict.
+			class="${class%% *}"
 			case "$stage" in
 				states|tokens) continue ;;
 			esac
@@ -238,4 +244,31 @@ mb_manifest_coverage() {
 		echo "VERDICT: MATCH"
 		return 0
 	fi
+}
+
+# --- mb_seam_to_coverage ----------------------------------------------------
+#
+# Bridge: turn an (already --check-seam'd) MB-SEAM block into MB-COVERAGE
+# lines for <stage> (semantic|flow), so the consolidation step never has to
+# translate by hand -- the one place where judgement would otherwise have
+# crept back in between two deterministic steps.
+#   <id> | <stage> | <class-without-annotation> | <terminal, else render, else ->
+# MALFORMED lines from mb_check_seam are passed through unchanged.
+mb_seam_to_coverage() {
+	local seamfile="$1" stage="$2" line id verdict terminal render loc
+	[ -f "$seamfile" ] || return 3
+	case "$stage" in semantic|flow) ;; *) echo "stage must be semantic or flow" >&2; return 2 ;; esac
+	while IFS= read -r line; do
+		[ -n "$line" ] || continue
+		case "$line" in MB-SEAM|END) continue ;; MALFORMED:*) printf '%s\n' "$line"; continue ;; esac
+		id="$(printf '%s' "$line" | awk -F'\\|' '{f=$1; gsub(/^[ \t]+|[ \t]+$/,"",f); print f}')"
+		verdict="$(printf '%s' "$line" | awk -F'\\|' '{f=$NF; gsub(/^[ \t]+|[ \t]+$/,"",f); print f}')"
+		verdict="${verdict%% *}"
+		terminal="$(_mb_seam_field "$line" terminal)"
+		render="$(_mb_seam_field "$line" render)"
+		loc="-"
+		if [ -n "$terminal" ] && [ "$terminal" != "-" ]; then loc="$terminal"
+		elif [ -n "$render" ] && [ "$render" != "-" ]; then loc="$render"; fi
+		printf '%s | %s | %s | %s\n' "$id" "$stage" "$verdict" "$loc"
+	done < "$seamfile"
 }

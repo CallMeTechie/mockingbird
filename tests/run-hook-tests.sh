@@ -115,6 +115,19 @@ cp -r "$PROJ/docs" "$PROJ2/docs"
 check "identical in another clone" "$(mb_design_hash "$PROJ")" "$(mb_design_hash "$PROJ2")"
 check "no design dir -> empty" "" "$(mb_design_hash "$SANDBOX/nowhere")"
 
+echo "== mb_block_fact: fence-aware fact extraction =="
+BF="$SANDBOX/bf.md"
+{
+	printf '# Spec\n\nExample of the format:\n\n```markdown\n<!-- mockingbird:design:begin -->\n<!-- design: design_hash=sha256:0000 adapter=tui -->\n<!-- mockingbird:design:end -->\n```\n\n'
+	printf '<!-- mockingbird:design:begin -->\n<!-- design: manifest=docs/design/manifest.yaml design_rev=3\n     design_hash=sha256:abcd adapter=web -->\n<!-- mockingbird:design:end -->\n'
+} > "$BF"
+check "reads the real block, not the fenced example" "sha256:abcd" "$(mb_block_fact "$BF" design_hash)"
+check "reads a key on a continuation line" "web" "$(mb_block_fact "$BF" adapter)"
+check "reads a key on the first facts line" "3" "$(mb_block_fact "$BF" design_rev)"
+check "absent key -> empty" "" "$(mb_block_fact "$BF" nope)"
+printf '# no block\n<!-- design: design_hash=sha256:ffff -->\n' > "$BF"
+check "facts comment outside any block is ignored" "" "$(mb_block_fact "$BF" design_hash)"
+
 echo "== detect-design-context.sh end to end =="
 HOOK="$ROOT/plugin/hooks/detect-design-context.sh"
 P="$SANDBOX/e2e"

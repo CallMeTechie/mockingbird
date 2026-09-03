@@ -73,6 +73,11 @@ printf 'UI-X | tier=A | render=- | binding=- | source=- | handler=- | terminal=-
 check "wired through to mb_check_seam" "1" "$("$SCOPE" --check-seam "$SANDBOX/seam.txt" --root "$PROJ" | grep -c 'unverified:no-locator$')"
 check_rc "--check-seam without a file -> usage (2)" 2 "$SCOPE" --check-seam --root "$PROJ"
 
+echo "== --seam-to-coverage =="
+"$SCOPE" --check-seam "$SANDBOX/seam.txt" --root "$PROJ" > "$SANDBOX/seam-checked.txt"
+check "bridge wired through (after --check-seam)" "UI-X | semantic | unverified:no-locator | -" "$("$SCOPE" --seam-to-coverage "$SANDBOX/seam-checked.txt" --stage semantic)"
+check_rc "bridge without --stage -> usage (2)" 2 "$SCOPE" --seam-to-coverage "$SANDBOX/seam.txt"
+
 echo "== --coverage =="
 printf 'UI-ORDERS-TABLE | structure | ok | -\nUI-ORDERS-EMPTY | structure | ok | -\nUI-SHELL-NAV | structure | ok | -\n' > "$SANDBOX/cov.txt"
 check_rc "fully covered -> exit 0 (MATCH)" 0 "$SCOPE" --coverage "$SANDBOX/cov.txt" --root "$PROJ"

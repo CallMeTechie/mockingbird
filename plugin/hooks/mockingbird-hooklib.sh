@@ -161,3 +161,28 @@ mb_design_hash() {
 		done | LC_ALL=C sort
 	} | sha256sum 2>/dev/null | cut -d' ' -f1
 }
+
+# Read one key=value fact from the design block in <file>, fence-aware: only
+# the "<!-- design: ... -->" comment BETWEEN the mockingbird markers counts,
+# and markers inside fenced code blocks are ignored. Without this the hook's
+# earlier plain grep read the first "design_hash=" in the file -- which in a
+# spec that documents the format is the example, not the block -- and raised a
+# false "veraltet" nudge. A small duplication of the block library's awk on
+# purpose: the hook must never source plugin/lib/ (that would drag the
+# manifest parser into every Write/Edit), so it carries its own copy.
+# Empty output when there is no block or the key is absent.
+mb_block_fact() {
+	awk -v key="$2" '
+		{ line = $0; sub(/[[:space:]]+$/, "", line); sub(/^[[:space:]]+/, "", line) }
+		line ~ /^(```|~~~)/ { fence = !fence; next }
+		fence { next }
+		line == "<!-- mockingbird:design:begin -->" { inblock = 1; next }
+		line == "<!-- mockingbird:design:end -->"   { inblock = 0; next }
+		inblock && /<!-- design:/ { infacts = 1 }
+		inblock && infacts {
+			n = split($0, tok, /[[:space:]]+/)
+			for (i = 1; i <= n; i++) if (index(tok[i], key "=") == 1) { print substr(tok[i], length(key) + 2); exit }
+			if ($0 ~ /-->/) infacts = 0
+		}
+	' "$1" 2>/dev/null
+}

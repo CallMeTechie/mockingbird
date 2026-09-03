@@ -49,5 +49,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that must not be flagged, a genuine external service boundary that must
   read as "cannot verify" rather than "violated"), and a locale-independent
   scorer (`tests/bench/score.sh`).
-- 333 automated checks across ten suites; `tests/MANUAL-INTEGRATION.md` for
+- `mb-design-check.sh`: the split invariants and per-task `**Design:**`
+  coverage as a script, not prose; `--seam-to-coverage` bridging the seam
+  check to the verdict without a hand-off to judgement; `uses:` and
+  `allocations:` parsed so consumed elements and per-spec screens are derived
+  instead of supplied; fence-aware fact reading in the hook; the parser's
+  accepted subset spelled out in the schema document and the `/design` skill.
+- 402 automated checks across eleven suites; `tests/MANUAL-INTEGRATION.md` for
   what is LLM-driven and therefore not automatable.

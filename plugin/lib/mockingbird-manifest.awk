@@ -10,15 +10,17 @@
 # would silently drop UI requirements from every check downstream.
 #
 # Top-level keys other than schema/project/revision/updated/design_system/
-# mockups_index/tokens_css/adapters/primary_adapter/screens are skipped
-# structurally without being understood (changelog, flows, allocations,
-# retired) -- their presence does not error, but nothing inside them is parsed.
+# mockups_index/tokens_css/adapters/primary_adapter/screens/allocations are
+# skipped structurally without being understood (changelog, flows, retired)
+# -- their presence does not error, but nothing inside them is parsed.
+# allocations: items are emitted on the meta channel as
+#   allocation\t<spec>\t<owns-csv>\t<consumes-csv>
 #
 # Output: one TSV line per element, 15 fields:
 #   screen_id  screen_kind  screen_artboard  element_id  element_type
 #   element_label  element_status  element_verify  element_data_source
 #   semantic_means  semantic_concept  semantic_aliases  semantic_not
-#   states  locator_web  deferred_reason  skip_reason
+#   states  locator_web  deferred_reason  skip_reason  screen_uses
 # A field with no value is "-", never empty (keeps `cut -f` and column-count
 # checks unambiguous). A meta line for top-level scalars is written to fd 3
 # as "key\tvalue" when fd 3 is available (mb_manifest_meta redirects it there).
@@ -73,16 +75,26 @@ function reset_elem() {
 }
 
 function reset_screen() {
-	scr_id = ""; scr_kind = ""; scr_artboard = ""
+	scr_id = ""; scr_kind = ""; scr_artboard = ""; scr_uses = ""
+}
+
+function reset_alloc() {
+	alloc_spec = ""; alloc_owns = ""; alloc_consumes = ""
+}
+
+function emit_alloc() {
+	if (alloc_spec == "") return
+	if (META_FD != "") printf "allocation\t%s\t%s\t%s\n", alloc_spec, nz(alloc_owns), nz(alloc_consumes) > META_FD
+	reset_alloc()
 }
 
 function emit_elem() {
 	if (elem_id == "") return
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
 		nz(scr_id), nz(scr_kind), nz(scr_artboard), \
 		elem_id, nz(elem_type), nz(elem_label), nz(elem_status), nz(elem_verify), nz(elem_ds), \
 		nz(sa_means), nz(sa_concept), nz(sa_aliases), nz(sa_not), nz(states), nz(loc_web), \
-		nz(elem_reason_deferred), nz(elem_reason_skip)
+		nz(elem_reason_deferred), nz(elem_reason_skip), nz(scr_uses)
 	reset_elem()
 }
 
@@ -103,7 +115,7 @@ BEGIN {
 	MODE = "top"
 	errors = 0
 	META_FD = (ENVIRON["MB_META_FD"] != "" ? ENVIRON["MB_META_FD"] : "")
-	reset_elem(); reset_screen()
+	reset_elem(); reset_screen(); reset_alloc()
 }
 
 {
@@ -125,6 +137,7 @@ function dispatch(l,    key, val, rest) {
 		    MODE == "semantic_anchor" || MODE == "columns-skip" || MODE == "states" || MODE == "locators") {
 			emit_elem()
 		}
+		if (MODE == "allocations") emit_alloc()
 		key = l; sub(/:.*$/, "", key)
 		rest = l; sub(/^[A-Za-z_][A-Za-z0-9_]*:[ \t]*/, "", rest)
 		val = trim(rest)
@@ -135,6 +148,11 @@ function dispatch(l,    key, val, rest) {
 		if (key == "adapters") {
 			if (val != "") { parse_error("adapters: must introduce a block"); MODE = "skip-block"; return }
 			MODE = "adapters"; return
+		}
+		if (key == "allocations") {
+			if (val == "[]") { MODE = "top"; return }
+			if (val != "") { parse_error("allocations: must introduce a block or be []"); MODE = "skip-block"; return }
+			MODE = "allocations"; return
 		}
 		if (val == "" || val ~ /^[\[{]/) { MODE = "skip-block"; return }
 		meta(key, stripq(val))
@@ -148,6 +166,25 @@ function dispatch(l,    key, val, rest) {
 	if (MODE == "adapters") {
 		if (l ~ /^  [A-Za-z_][A-Za-z0-9_]*:[ \t]*\{.*\}[ \t]*$/) return
 		parse_error("malformed line inside adapters: block: " l)
+		return
+	}
+
+	# --- allocations: "- spec:" items with owns:/consumes: inline lists ---------
+	if (MODE == "allocations") {
+		if (l ~ /^  - spec:/) {
+			emit_alloc()
+			alloc_spec = stripq(trim(substr(l, index(l, "spec:") + 5)))
+			return
+		}
+		if (l ~ /^    (owns|consumes):/) {
+			key = l; sub(/^    /, "", key); sub(/:.*$/, "", key)
+			rest = l; sub(/^    (owns|consumes):[ \t]*/, "", rest)
+			val = trim(rest)
+			if (key == "owns") alloc_owns = inline_list(val)
+			else alloc_consumes = inline_list(val)
+			return
+		}
+		parse_error("unrecognized line inside allocations: " l)
 		return
 	}
 
@@ -182,6 +219,7 @@ function dispatch(l,    key, val, rest) {
 			}
 			if (key == "kind") scr_kind = stripq(val)
 			else if (key == "artboard") scr_artboard = (val == "null" ? "" : stripq(val))
+			else if (key == "uses") scr_uses = inline_list(val)
 			return
 		}
 		parse_error("unrecognized line at screen level: " l)
@@ -293,5 +331,6 @@ function dispatch(l,    key, val, rest) {
 
 END {
 	emit_elem()
+	emit_alloc()
 	if (errors > 0) exit 5
 }

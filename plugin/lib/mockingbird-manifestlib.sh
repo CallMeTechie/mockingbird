@@ -4,7 +4,7 @@
 # domain knowledge and must not depend on yq or on this file's parser.
 #
 # mb_manifest_to_tsv normalizes the manifest to a flat TSV: one line per
-# element, 17 tab-separated fields (see mockingbird-manifest.awk header).
+# element, 18 tab-separated fields (see mockingbird-manifest.awk header).
 # Every downstream check (--elements, --locate, --validate, coverage) reads
 # only this TSV, never the YAML directly, so a test can assert against the
 # normal form without needing yq.
@@ -43,6 +43,7 @@ MB_F_STATES=14
 MB_F_LOCATOR_WEB=15
 MB_F_DEFERRED_REASON=16
 MB_F_SKIP_REASON=17
+MB_F_SCREEN_USES=18
 
 # Emit the normalized element TSV for <file> on stdout.
 # Exit: 0 ok · 3 file missing/unreadable · 5 parse error (yq path: yq/jq failure).
@@ -62,7 +63,8 @@ mb_manifest_to_tsv() {
 				(if ($e.semantic_anchor.not // []) == [] then "-" else ($e.semantic_anchor.not | join(",")) end),
 				(if ($e.states // []) == [] then "-" else (($e.states // []) | map(.id) | join(",")) end),
 				($e.locators.web // "-"),
-				($e.deferred_reason // "-"), ($e.reason // "-")
+				($e.deferred_reason // "-"), ($e.reason // "-"),
+				(if ($s.uses // []) == [] then "-" else ($s.uses | join(",")) end)
 			] | @tsv'
 		return $?
 	fi
@@ -111,7 +113,7 @@ mb_manifest_validate() {
 	local seen_screens=' ' seen_elements=' '
 	while IFS=$'\t' read -r scr_id scr_kind scr_artboard elem_id elem_type elem_label \
 		elem_status elem_verify elem_ds sa_means sa_concept sa_aliases sa_not \
-		states loc_web reason_deferred reason_skip; do
+		states loc_web reason_deferred reason_skip scr_uses; do
 		[ -n "$elem_id" ] || continue
 
 		if ! mb_valid_id "$scr_id"; then
@@ -156,6 +158,38 @@ mb_manifest_validate() {
 		fi
 	done <<< "$tsv"
 
+	# Cross-references: every id named in a screen's uses: list and in
+	# allocations: owns/consumes must exist. A dangling reference here would
+	# otherwise surface much later as a confusing "element not found" in
+	# /design-verify or a silently empty consumed-elements list in the spec.
+	local all_ids ref
+	all_ids=" $(printf '%s\n' "$tsv" | awk -F'\t' '{print $1; print $4}' | sort -u | tr '\n' ' ') "
+	while IFS=$'\t' read -r _s1 _s2 _s3 _e1 _e2 _e3 _e4 _e5 _e6 _e7 _e8 _e9 _e10 _e11 _e12 _e13 _e14 uses; do
+		[ -n "$uses" ] && [ "$uses" != "-" ] || continue
+		for ref in ${uses//,/ }; do
+			case "$all_ids" in *" $ref "*) ;; *) echo "$_s1: uses references unknown id $ref" >&2; problems=$((problems + 1)) ;; esac
+		done
+	done <<< "$(printf '%s\n' "$tsv" | sort -u -t"$(printf '\t')" -k1,1)"
+	while IFS=$'\t' read -r spec owns consumes; do
+		[ -n "$spec" ] || continue
+		for ref in ${owns//,/ } ${consumes//,/ }; do
+			[ "$ref" != "-" ] || continue
+			case "$all_ids" in *" $ref "*) ;; *) echo "allocation $spec references unknown id $ref" >&2; problems=$((problems + 1)) ;; esac
+		done
+	done <<< "$(mb_manifest_allocations "$file")"
+
 	[ "$problems" -eq 0 ] || return 6
 	return 0
+}
+
+# Emit "spec\towns-csv\tconsumes-csv" per allocations: entry ("-" when empty).
+# Empty output when the manifest has no allocations (the single-spec case).
+mb_manifest_allocations() {
+	local file="$1"
+	[ -f "$file" ] && [ -r "$file" ] || return 3
+	if command -v yq >/dev/null 2>&1; then
+		yq -r '(.allocations // [])[] | [.spec, (if (.owns // []) == [] then "-" else (.owns|join(",")) end), (if (.consumes // []) == [] then "-" else (.consumes|join(",")) end)] | @tsv' -- "$file" 2>/dev/null
+		return $?
+	 fi
+	MB_META_FD=/dev/fd/3 awk -f "$MB_MANIFEST_AWK" -- "$file" 3>&1 1>/dev/null | awk -F'\t' '$1=="allocation"{print $2 "\t" $3 "\t" $4}'
 }

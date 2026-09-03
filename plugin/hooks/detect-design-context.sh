@@ -88,7 +88,7 @@ Rufe den Skill carrying-design-through (mockingbird) mit mode=sync auf. $SEQ_HIN
 		if ! grep -qF -- '<!-- mockingbird:design:begin -->' "$FILE" 2>/dev/null; then
 			emit "docs/design/manifest.yaml existiert, aber diese Spec trägt keinen Design-Block. Rufe den Skill carrying-design-through (mockingbird) mit mode=spec und path=$FILE auf. $SEQ_HINT"
 		fi
-		BLOCK_HASH="$(grep -oE 'design_hash=sha256:[0-9a-f]+' -- "$FILE" 2>/dev/null | head -n1 | cut -d: -f2)"
+		BLOCK_HASH="$(mb_block_fact "$FILE" design_hash)"; BLOCK_HASH="${BLOCK_HASH#sha256:}"
 		if [ "$BLOCK_HASH" != "$DESIGN_HASH" ]; then
 			emit "Der Design-Block dieser Spec ist veraltet (Block: ${BLOCK_HASH:-keiner}, aktuell: $DESIGN_HASH). Rufe den Skill carrying-design-through (mockingbird) mit mode=sync und path=$FILE auf. $SEQ_HINT"
 		fi

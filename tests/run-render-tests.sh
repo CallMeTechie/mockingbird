@@ -49,6 +49,16 @@ check "consumed element listed in prose with its label" "1" "$(printf '%s\n' "$S
 check "facts screens= reflects the filter" "UI-ORDERS" "$(mb_fact_get "$(printf '%s\n' "$SUB" | grep '<!-- design:')" screens)"
 check "facts consumes= reflects the flag" "UI-SHELL-NAV" "$(mb_fact_get "$(printf '%s\n' "$SUB" | grep '<!-- design:')" consumes)"
 
+echo "== consumes derived from uses:, --spec resolved via allocations: =="
+DERIVED="$("$RENDER" --root "$PROJ" --screens UI-ORDERS)"
+check "consumes derived from uses: when not given" "UI-SHELL-NAV" "$(mb_fact_get "$(printf '%s\n' "$DERIVED" | grep '<!-- design:')" consumes)"
+FULL="$("$RENDER" --root "$PROJ")"
+check_rc "all screens in scope -> no consumes (owned in scope)" 1 mb_fact_get "$(printf '%s\n' "$FULL" | grep '<!-- design:')" consumes
+VIA="$("$RENDER" --root "$PROJ" --spec docs/superpowers/specs/2026-09-03-orders-design.md)"
+check "--spec pulls screens from allocations" "UI-ORDERS,UI-SHELL" "$(mb_fact_get "$(printf '%s\n' "$VIA" | grep '<!-- design:')" screens)"
+UNKNOWN="$("$RENDER" --root "$PROJ" --spec docs/superpowers/specs/unknown-design.md)"
+check "--spec not in allocations -> falls back to all screens" "UI-ORDERS,UI-SHELL" "$(mb_fact_get "$(printf '%s\n' "$UNKNOWN" | grep '<!-- design:')" screens)"
+
 echo "== manifest fails validation -> render refuses =="
 BAD="$SANDBOX/bad-proj"; mkdir -p "$BAD/docs/design"
 sed 's/UI-ORDERS-EMPTY/UI-ORDERS-TABLE/' "$PROJ/docs/design/manifest.yaml" > "$BAD/docs/design/manifest.yaml"

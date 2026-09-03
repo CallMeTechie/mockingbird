@@ -5,6 +5,15 @@ argument-hint: "[project root, default: current project]"
 
 Read-only. Schreibt nichts.
 
+Zuerst den deterministischen Teil laufen lassen — er deckt Schritte 1–4
+vollständig ab und gibt `Befund | Ort | Schwere`-Zeilen aus:
+
+```
+${CLAUDE_PLUGIN_ROOT}/scripts/mb-design-check.sh <projekt-root>
+```
+
+Die Schritte im Detail (was das Skript prüft):
+
 1. `docs/design/manifest.yaml` validieren:
    `${CLAUDE_PLUGIN_ROOT}/lib/mockingbird-manifestlib.sh` → `mb_manifest_validate`
    mit `MB_VALIDATE_ROOT` gesetzt.
