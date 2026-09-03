@@ -66,23 +66,27 @@ claude plugin install /path/to/mockingbird/plugin
 | `/design-sync` | Refreshes the block, the plan header, the global constraints and the per-task tables. |
 | `/design-split` | Records which sub-spec owns which screens when a spec is decomposed. |
 | `/design-check` | Read-only: checks the manifest and every derived document against the invariants. |
-| `/design-verify` | *Not built yet.* Will check the built result against the manifest, apply provable fixes, report a verdict. |
-| `/mockingbird-bench` | *Not built yet.* Will measure recall, false positives and hallucination rate against fixtures. |
+| `/design-verify` | Checks the built code against the manifest — including whether a control's data binding actually matches its label — applies provable fixes, reports a verdict. |
+| `/mockingbird-bench` | Measures recall, false-positive rate and hallucination rate against `tests/fixtures/bench/`. |
 
 ## Status
 
-Built and tested: the plugin scaffold, the hook layer (path detection, two-hash
-drift state, session-aware locking), the design marker block (placement next
-to preflight's security block, idempotent rendering), the manifest parser and
-validator, and — the load-bearing piece — propagation into a plan and a
-per-task design table, proven against the real, vendored superpowers
-task-brief cut rather than a paraphrase of it.
+Built and tested, 333 automated checks across ten suites: the plugin
+scaffold; the hook layer (path detection, two-hash drift state, session-aware
+locking); the design marker block (placement next to preflight's security
+block, idempotent rendering); the manifest parser and validator; propagation
+into a plan and a per-task design table, proven against the real, vendored
+superpowers task-brief cut rather than a paraphrase of it; the deterministic
+verify core (adapter contract, the four anti-hallucination seam rules, the
+nine coverage/verdict rules, the `mockingbird-scope.sh` CLI); and the
+`verifying-against-mockup` skill with its stage mandates, `reviewer`/`editor`
+agents, and a bench with planted deviations and two deliberate decoys.
 
-Not built yet: the `designing-frontends` dialogue skill and its `/design`
-command, the semantic verification chain (`/design-verify`, the
-structure/semantic/states/tokens/flow reviewers, the plausibility check that
-gives this plugin its name — "a dropdown labelled *Abteilung* must actually
-show departments"), and its bench.
+What's LLM-driven and therefore outside automated testing (the dialogue
+itself, a live `/design-verify` run, the bench's actual recall) is covered
+instead by `tests/MANUAL-INTEGRATION.md` — ten scenarios to run by hand
+against a real session, the same honest boundary preflight draws for its own
+skill behavior.
 
 ## Artefacts it writes into your project
 
@@ -104,18 +108,28 @@ State lives under `<project>/.claude/` and never under the plugin directory.
 Plain bash, no framework.
 
 ```
-tests/run-all.sh                    # everything (206 checks as of this writing)
+tests/run-all.sh                    # everything (333 checks as of this writing)
 tests/run-hook-tests.sh             # path detection, state, locking, end-to-end hook
 tests/run-block-tests.sh            # marker block: exit contract, fences, idempotent render
 tests/run-manifest-tests.sh         # strict-subset YAML parser, TSV normal form, validation
 tests/run-render-tests.sh           # rendering the block, inserting it, propagating failures
 tests/run-plan-propagation-tests.sh # the design table survives the REAL superpowers task-brief cut
+tests/run-adapter-tests.sh          # the four-function adapter contract; web's locator tiers
+tests/run-coverage-tests.sh         # every seam rule and every coverage/verdict rule, one by one
+tests/run-scope-tests.sh            # the mockingbird-scope.sh CLI wiring
+tests/run-wellformed-tests.sh       # agent/command/skill frontmatter, no AskUserQuestion in agents
+tests/run-bench-tests.sh            # the bench SCORER (not a live LLM run — see below)
 ```
 
-`tests/run-scope-tests.sh` and `tests/run-bench-tests.sh` (the verify chain
-and its quality bench) are not built yet — see the roadmap below.
-
-`tests/MANUAL-INTEGRATION.md` covers what is LLM-driven and therefore not automatable.
+`tests/MANUAL-INTEGRATION.md` covers what is LLM-driven and therefore not
+automatable: the design dialogue itself, a live `/design-verify` run against
+`tests/fixtures/bench/app-mismatch` and `app-clean`, and `/mockingbird-bench`'s
+actual recall/precision numbers — the same honest boundary preflight draws
+for its own skill behavior. What *is* automated about the bench is the
+scorer's arithmetic (`tests/bench/score.sh --self-test`, including a
+regression test that it stays correct under a comma-decimal locale) and the
+fixtures' structural soundness (do they validate, are the golden files
+well-formed, are both planted decoys locatable at all).
 
 ## License
 

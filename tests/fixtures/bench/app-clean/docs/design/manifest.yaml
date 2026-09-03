@@ -1,0 +1,109 @@
+schema: mockingbird/1
+project: bench
+revision: 1
+updated: 2026-01-01
+design_system: docs/design/design-system.md
+mockups_index: docs/design/mockups/index.html
+tokens_css: docs/design/mockups/tokens.css
+
+changelog:
+  - rev: 1
+    date: 2026-01-01
+    summary: bench fixture
+    touched: [UI-EMP-DEPT, UI-EMP-LOCATION, UI-EMP-ROLE, UI-EMP-SAVE, UI-EMP-NAME]
+
+adapters:
+  web: { locator: attribute, attribute: data-ui-id, visual_check: false }
+primary_adapter: web
+
+screens:
+  - id: UI-EMP
+    kind: page
+    title: Mitarbeiterformular
+    artboard: docs/design/mockups/ui-emp.html
+    elements:
+      - id: UI-EMP-DEPT
+        type: field
+        label: Abteilung
+        status: required
+        verify: required
+        data_source: "departments"
+        semantic_anchor:
+          means: Die Abteilung, der der Mitarbeiter zugeordnet ist.
+          concept: department
+          aliases: [dept, abteilung, orgUnit]
+          not: [team, group, cost_center]
+          cardinality: one
+        states:
+          - { id: default }
+
+      - id: UI-EMP-LOCATION
+        type: field
+        label: Standort
+        status: required
+        verify: required
+        data_source: "locations"
+        semantic_anchor:
+          means: Der Bürostandort des Mitarbeiters.
+          concept: location
+          aliases: [standort, office]
+          not: [department, region]
+          cardinality: one
+        states:
+          - { id: default }
+
+      - id: UI-EMP-ROLE
+        type: field
+        label: Rolle
+        status: required
+        verify: required
+        data_source: "roles"
+        semantic_anchor:
+          means: Die Rolle des Mitarbeiters im System.
+          concept: role
+          aliases: [rolle]
+          not: [department, team]
+          cardinality: one
+        states:
+          - { id: default }
+
+      - id: UI-EMP-NAME
+        type: field
+        label: Name
+        status: required
+        verify: required
+        data_source: "billing-service"
+        semantic_anchor:
+          means: Der vollständige Name des Mitarbeiters, aus dem externen Abrechnungsdienst.
+          concept: employee_name
+          aliases: [name]
+          cardinality: one
+        states:
+          - { id: default }
+
+      - id: UI-EMP-SAVE
+        type: action
+        label: Speichern
+        status: required
+        verify: required
+        data_source: static
+        semantic_anchor:
+          means: Speichert das Formular und kehrt zur Liste zurück.
+        states:
+          - { id: default }
+          - { id: error }
+
+      - id: UI-EMP-COSTCENTER
+        type: field
+        label: Kostenstelle
+        status: required
+        verify: required
+        data_source: "cost centers"
+        semantic_anchor:
+          means: Die Kostenstelle, der der Mitarbeiter zugeordnet ist.
+          concept: cost_center
+          aliases: [kostenstelle]
+          not: [department, team]
+          cardinality: one
+        states:
+          - { id: default }

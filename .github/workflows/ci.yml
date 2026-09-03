@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# mockingbird has no separate integration suite (no mock server, no network):
+# its whole test surface is plain bash over files under tests/. static and
+# unit therefore cover everything; release is gated on both passing.
+jobs:
+  static:
+    name: static checks (shellcheck, manifest wellformedness)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck jq
+      - name: Shellcheck every script
+        run: |
+          shellcheck -S warning plugin/hooks/*.sh plugin/lib/*.sh \
+            plugin/scripts/*.sh plugin/scripts/adapters/*.sh \
+            tests/*.sh tests/bench/*.sh
+      - name: Wellformedness (agent/command/skill frontmatter, manifests)
+        run: bash tests/run-wellformed-tests.sh
+
+  unit:
+    name: unit tests (all suites, no network)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Run every suite
+        run: bash tests/run-all.sh
+
+  release:
+    name: release on version bump
+    needs: [static, unit]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Read plugin version
+        id: v
+        run: echo "version=$(python3 -c "import json;print(json.load(open('plugin/.claude-plugin/plugin.json'))['version'])")" >> "$GITHUB_OUTPUT"
+      - name: Tag + release if the version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ steps.v.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists — nothing to release."; exit 0
+          fi
+          git config user.name "CallMeTechie"
+          git config user.email "34693633+CallMeTechie@users.noreply.github.com"
+          git tag -a "$TAG" -m "mockingbird $TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" --title "mockingbird $TAG" --generate-notes

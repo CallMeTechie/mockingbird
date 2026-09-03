@@ -1,0 +1,10 @@
+[
+	{ "element": "UI-EMP-DEPT",       "stage": "semantic", "class": "violated" },
+	{ "element": "UI-EMP-LOCATION",   "stage": "semantic", "class": "partial" },
+	{ "element": "UI-EMP-COSTCENTER", "stage": "semantic", "class": "ok" },
+	{ "element": "UI-EMP-ROLE",       "stage": "semantic", "class": "violated" },
+	{ "element": "UI-EMP-NAME",       "stage": "semantic", "class": "unverified:external-boundary" },
+	{ "element": "UI-EMP-SAVE",       "stage": "flow",     "class": "violated" },
+	{ "element": "UI-EMP-SAVE",       "stage": "states",   "class": "partial" },
+	{ "element": "UI-EMP-SAVE",       "stage": "tokens",   "class": "violated" }
+]
