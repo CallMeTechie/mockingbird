@@ -2,6 +2,7 @@
 # mb-render-block.sh and mb-insert-block.sh: rendering a manifest into a block,
 # and placing that block into a target document.
 set -u
+# shellcheck disable=SC1007  # CDPATH= is a deliberate empty assignment
 HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 ROOT="$(dirname -- "$HERE")"
 . "$HERE/_helper.sh"

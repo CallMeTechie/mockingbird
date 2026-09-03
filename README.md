@@ -66,8 +66,23 @@ claude plugin install /path/to/mockingbird/plugin
 | `/design-sync` | Refreshes the block, the plan header, the global constraints and the per-task tables. |
 | `/design-split` | Records which sub-spec owns which screens when a spec is decomposed. |
 | `/design-check` | Read-only: checks the manifest and every derived document against the invariants. |
-| `/design-verify` | Checks the built result against the manifest, applies provable fixes, reports a verdict. |
-| `/mockingbird-bench` | Measures recall, false positives and hallucination rate against fixtures. |
+| `/design-verify` | *Not built yet.* Will check the built result against the manifest, apply provable fixes, report a verdict. |
+| `/mockingbird-bench` | *Not built yet.* Will measure recall, false positives and hallucination rate against fixtures. |
+
+## Status
+
+Built and tested: the plugin scaffold, the hook layer (path detection, two-hash
+drift state, session-aware locking), the design marker block (placement next
+to preflight's security block, idempotent rendering), the manifest parser and
+validator, and — the load-bearing piece — propagation into a plan and a
+per-task design table, proven against the real, vendored superpowers
+task-brief cut rather than a paraphrase of it.
+
+Not built yet: the `designing-frontends` dialogue skill and its `/design`
+command, the semantic verification chain (`/design-verify`, the
+structure/semantic/states/tokens/flow reviewers, the plausibility check that
+gives this plugin its name — "a dropdown labelled *Abteilung* must actually
+show departments"), and its bench.
 
 ## Artefacts it writes into your project
 
@@ -89,12 +104,16 @@ State lives under `<project>/.claude/` and never under the plugin directory.
 Plain bash, no framework.
 
 ```
-tests/run-all.sh          # everything
-tests/run-hook-tests.sh   # path detection, state, locking, end-to-end hook
-tests/run-block-tests.sh  # marker block: exit contract, fences, idempotent render
-tests/run-scope-tests.sh  # manifest validation, locators, seam check, coverage verdicts
-tests/run-bench-tests.sh  # the scorer itself, no LLM involved
+tests/run-all.sh                    # everything (206 checks as of this writing)
+tests/run-hook-tests.sh             # path detection, state, locking, end-to-end hook
+tests/run-block-tests.sh            # marker block: exit contract, fences, idempotent render
+tests/run-manifest-tests.sh         # strict-subset YAML parser, TSV normal form, validation
+tests/run-render-tests.sh           # rendering the block, inserting it, propagating failures
+tests/run-plan-propagation-tests.sh # the design table survives the REAL superpowers task-brief cut
 ```
+
+`tests/run-scope-tests.sh` and `tests/run-bench-tests.sh` (the verify chain
+and its quality bench) are not built yet — see the roadmap below.
 
 `tests/MANUAL-INTEGRATION.md` covers what is LLM-driven and therefore not automatable.
 
