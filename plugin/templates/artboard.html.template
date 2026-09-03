@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de">
+<head>
+	<meta charset="utf-8">
+	<title><!-- SCREEN_TITLE --></title>
+	<link rel="stylesheet" href="./tokens.css">
+	<style>
+		body { font: var(--type-body); color: var(--color-text); background: var(--color-surface); margin: 0; padding: var(--space-8); }
+		.mb-state-label { font: var(--type-caption); color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .04em; margin: var(--space-8) 0 var(--space-2); }
+		[data-ui-state] { border: 1px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); }
+	</style>
+</head>
+<body>
+	<h1 class="mb-state-label"><!-- SCREEN_TITLE --> — <!-- SCREEN_ID --></h1>
+
+	<!-- Je Element: ein Block mit data-ui-id, je Zustand ein <section data-ui-state="..."> darin. -->
+	<!-- ELEMENTS -->
+
+</body>
+</html>

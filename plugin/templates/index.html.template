@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de">
+<head>
+	<meta charset="utf-8">
+	<title>Mockups — Kontaktbogen</title>
+	<link rel="stylesheet" href="./tokens.css">
+	<style>
+		body { font: var(--type-body); color: var(--color-text); background: var(--color-surface); margin: 0; padding: var(--space-8); }
+		.mb-index { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-4); list-style: none; padding: 0; }
+		.mb-index li { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); }
+		.mb-index a { font: var(--type-heading); color: var(--color-accent); text-decoration: none; }
+	</style>
+</head>
+<body>
+	<h1 style="font: var(--type-page-title)">Mockups</h1>
+	<ul class="mb-index">
+		<!-- Je Screen ein <li><a href="./<slug>.html"><Screen-Titel></a></li> -->
+	</ul>
+</body>
+</html>
