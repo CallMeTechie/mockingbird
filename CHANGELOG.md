@@ -55,5 +55,5 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `allocations:` parsed so consumed elements and per-spec screens are derived
   instead of supplied; fence-aware fact reading in the hook; the parser's
   accepted subset spelled out in the schema document and the `/design` skill.
-- 402 automated checks across eleven suites; `tests/MANUAL-INTEGRATION.md` for
+- 371 automated checks across eleven suites; `tests/MANUAL-INTEGRATION.md` for
   what is LLM-driven and therefore not automatable.
