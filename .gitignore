@@ -1,0 +1,5 @@
+*.bak
+*.mockingbird.bak
+*.mockingbird[0-9].bak
+.DS_Store
+node_modules/

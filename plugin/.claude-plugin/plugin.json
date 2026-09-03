@@ -1,0 +1,15 @@
+{
+	"$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+	"name": "mockingbird",
+	"version": "0.1.0",
+	"description": "Frontend design that survives the project. Works out a UI design with you, writes HTML artboards plus a machine-readable manifest to docs/design/, and carries that design through spec, plan and every task brief so agentic implementation cannot drift away from it.",
+	"author": {
+		"name": "CallMeTechie",
+		"email": "34693633+CallMeTechie@users.noreply.github.com",
+		"url": "https://github.com/CallMeTechie"
+	},
+	"homepage": "https://github.com/CallMeTechie/mockingbird",
+	"repository": "https://github.com/CallMeTechie/mockingbird",
+	"license": "MIT",
+	"keywords": ["design", "ui", "ux", "mockup", "frontend", "superpowers", "hook", "manifest", "verification"]
+}
