@@ -1,6 +1,6 @@
 ---
 description: Measures the verify chain's recall, false-positive rate and hallucination rate against the app-mismatch/app-clean fixtures.
-argument-hint: ""
+argument-hint: "[--root DIR] "
 ---
 
 Führe `/design-verify` im Whole-Screen-Modus gegen beide Fixtures aus
@@ -21,3 +21,5 @@ Ausgabe: feste Tabelle (Recall, Precision, F1, False-Positives,
 Halluzinationsrate) plus zwingend die Zeile
 `_Hinweis: LLM-Lauf, nicht deterministisch — Werte können über Läufe
 schwanken._` Der Exit-Code ist **informativ**, kein Abbruchgrund.
+
+**Projektverzeichnis:** `--root DIR` legt das Projekt fest (das Verzeichnis mit `docs/design/`). Ohne `--root` gilt das aktuelle Arbeitsverzeichnis bzw. dessen Projekt-Root. So lässt sich ein anderes Projekt bearbeiten, ohne die Session dort zu starten.

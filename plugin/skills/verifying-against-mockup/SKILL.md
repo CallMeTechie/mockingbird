@@ -18,7 +18,7 @@ eine Referenz plus ein Shell-Fragment.
 aus", sondern „ist die gebaute Funktion plausibel zu dem, was das Mockup
 verspricht". Details: `references/stages/semantic.md`.
 
-**Input:** `mode` (`verify` | `fix`) + `path` zum Projekt-Root. Quelle:
+**Input:** `mode` (`verify` | `fix`) + `path` zum Projekt-Root (aus `--root DIR` des Commands, sonst das aktuelle Projekt). Quelle:
 `/design-verify`-Command, ein Hook-Hinweis, oder ein automatischer Trigger
 nach Task-/Plan-Abschluss bzw. vor einem Commit.
 

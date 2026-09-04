@@ -1,6 +1,6 @@
 ---
 description: Render the mockingbird design block into a superpowers spec from docs/design/manifest.yaml.
-argument-hint: "[path to spec] [--screens ID,ID,...] [--consumes ID,ID,...]"
+argument-hint: "[--root DIR] [path to spec] [--screens ID,ID,...] [--consumes ID,ID,...]"
 ---
 
 Rufe das Skill `carrying-design-through` (mockingbird) mit `mode=spec` auf.
@@ -19,3 +19,5 @@ Argumente: `$ARGUMENTS` = optionaler Pfad zur Spec-Datei, optional
 Folge dem Skill exakt in der dort beschriebenen Reihenfolge (Manifest lesen →
 Screens/Consumes bestimmen → `mb-insert-block.sh` ausführen → Ergebnis
 zusammenfassen).
+
+**Projektverzeichnis:** `--root DIR` legt das Projekt fest (das Verzeichnis mit `docs/design/`). Ohne `--root` gilt das aktuelle Arbeitsverzeichnis bzw. dessen Projekt-Root. So lässt sich ein anderes Projekt bearbeiten, ohne die Session dort zu starten.

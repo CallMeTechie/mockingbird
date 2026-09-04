@@ -1,6 +1,6 @@
 ---
 description: Read-only — checks the manifest and every derived document against the mockingbird invariants.
-argument-hint: "[project root, default: current project]"
+argument-hint: "[--root DIR] [project root, default: current project]"
 ---
 
 Read-only. Schreibt nichts.
@@ -35,3 +35,5 @@ Die Schritte im Detail (was das Skript prüft):
    trägt — ein Task ohne beides wird gemeldet.
 5. Bericht als Tabelle `Befund | Ort | Schwere`. Nichts anwenden, nichts
    fixen — dafür ist `/design-sync` bzw. `/design-verify` da.
+
+**Projektverzeichnis:** `--root DIR` legt das Projekt fest (das Verzeichnis mit `docs/design/`). Ohne `--root` gilt das aktuelle Arbeitsverzeichnis bzw. dessen Projekt-Root. So lässt sich ein anderes Projekt bearbeiten, ohne die Session dort zu starten.

@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-04
+
+### Added
+
+- Every command accepts `--root DIR`, so a project can be worked on from a session started elsewhere — needed to resume a long session in one directory while verifying a project in another.
+
 ## [0.1.3] - 2026-09-04
 
 ### Added

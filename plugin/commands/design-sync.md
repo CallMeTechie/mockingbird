@@ -1,6 +1,6 @@
 ---
 description: Refresh the design block in a spec, plus the plan header, global constraints and per-task design tables when they drifted.
-argument-hint: "[path to spec or plan]"
+argument-hint: "[--root DIR] [path to spec or plan]"
 ---
 
 Rufe das Skill `carrying-design-through` (mockingbird) mit `mode=sync` auf,
@@ -19,3 +19,5 @@ Ablauf:
    `mode=plan` aktualisieren.
 3. Zusammenfassen, was aktualisiert wurde und was bereits aktuell war
    (Exit 4 aus `mb-insert-block.sh` — kein Grund zur Sorge, kein Fehler).
+
+**Projektverzeichnis:** `--root DIR` legt das Projekt fest (das Verzeichnis mit `docs/design/`). Ohne `--root` gilt das aktuelle Arbeitsverzeichnis bzw. dessen Projekt-Root. So lässt sich ein anderes Projekt bearbeiten, ohne die Session dort zu starten.
