@@ -163,12 +163,23 @@ mkdir -p "$PROJ/landing"
 cat > "$PROJ/landing/package.json" <<'PKG'
 { "name": "l", "scripts": { "lint": "eslint ." } }
 PKG
+cat > "$PROJ/package.json" <<'PKG'
+{ "name": "root", "scripts": { "lint": "eslint server scripts", "test": "node --test" } }
+PKG
 HCOUT="$("$SCOPE" --healthcheck --root "$PROJ" 2>/dev/null)"
 check "healthcheck names a lint command" "1" "$(printf '%s\n' "$HCOUT" | grep -c 'eslint')"
 check "each line carries its whole|files scope" "0" "$(printf '%s\n' "$HCOUT" | grep -vcE $'\t(whole|files)$')"
 check "source_roots narrow it to the package the screens live in" "0" "$(printf '%s\n' "$HCOUT" | grep -c '^landing	')"
+# A monorepo keeps its whole test suite at the top; a client-only scan would
+# never see it, and a run that changes server code has to.
+check "a root command of a kind no package offers is kept" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^\.	npm run --silent test	whole$')"
+# Run from the root a linter sees every package; run from one package it sees
+# only that package, and this stage hands it paths from anywhere.
+check "the root file-scoped linter wins over the package one" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^\.	npx eslint	files$')"
+check "and the superseded package linter is dropped" "0" "$(printf '%s\n' "$HCOUT" | grep -c '^client	npx eslint	files$')"
+check "the package build still stands on its own" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^client	npm run --silent build	whole$')"
 check_rc "healthcheck without a manifest -> 3" 3 "$SCOPE" --healthcheck --root "$SANDBOX/nowhere"
-rm -rf "$PROJ/client" "$PROJ/landing"
+rm -rf "$PROJ/client" "$PROJ/landing" "$PROJ/package.json"
 check_rc "no runnable command in the project -> 3 (not a silent pass)" 3 "$SCOPE" --healthcheck --root "$PROJ"
 
 echo "== --self-test =="

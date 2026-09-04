@@ -329,20 +329,64 @@ case "$MODE" in
 		# so a single-package project still gets its command.
 		SR="$(_meta source_roots | tr ',' ' ')"
 		if [ -n "$SR" ] && [ -n "$HC" ]; then
-			NARROW=""
-			while IFS="$(printf '\t')" read -r wd cmd; do
+			NARROW="" ROOTONLY="" KINDS=""
+			while IFS="$(printf '\t')" read -r wd cmd scope; do
 				[ -n "$wd" ] || continue
 				[ "$wd" = "." ] && continue
 				for r in $SR; do
 					case "${r%/}/" in
-						"${wd%/}/"*) NARROW="${NARROW}${wd}$(printf '\t')${cmd}
-"; break ;;
+						"${wd%/}/"*)
+							NARROW="${NARROW}${wd}$(printf '\t')${cmd}$(printf '\t')${scope}
+"
+							KINDS="$KINDS ${cmd##* }" ;;
 					esac
 				done
 			done <<EOF
 $HC
 EOF
-			[ -n "$NARROW" ] && HC="${NARROW%$'\n'}"
+			# What the repo root keeps, and why it is not simply dropped:
+			#
+			#  - a "files" command from the root WINS over the same tool in a
+			#    package, and the package one is discarded. Run from the root a
+			#    linter sees every package; run from one package it sees only
+			#    that package, and this stage hands it paths from anywhere the
+			#    run touched. Outpost: the root lints server and scripts, the
+			#    client lints only itself, and this run changed both.
+			#  - a "whole" command is kept only for a kind no narrowed package
+			#    offers. A monorepo often keeps the entire test suite at the top
+			#    (Outpost: 1086 tests behind the root "test" script, invisible
+			#    to a client-only scan).
+			if [ -n "$NARROW" ]; then
+				ROOTFILES=""
+				while IFS="$(printf '\t')" read -r wd cmd scope; do
+					[ "$wd" = "." ] || continue
+					if [ "$scope" = "files" ]; then
+						ROOTFILES="${ROOTFILES}${wd}$(printf '\t')${cmd}$(printf '\t')${scope}
+"
+						continue
+					fi
+					case " $KINDS " in *" ${cmd##* } "*) continue ;; esac
+					ROOTONLY="${ROOTONLY}${wd}$(printf '\t')${cmd}$(printf '\t')${scope}
+"
+				done <<EOF
+$HC
+EOF
+				if [ -n "$ROOTFILES" ]; then
+					# Drop the package-scoped file commands the root supersedes.
+					KEPT=""
+					while IFS="$(printf '\t')" read -r wd cmd scope; do
+						[ -n "$wd" ] || continue
+						[ "$scope" = "files" ] && continue
+						KEPT="${KEPT}${wd}$(printf '\t')${cmd}$(printf '\t')${scope}
+"
+					done <<EOF
+$NARROW
+EOF
+					NARROW="$KEPT"
+				fi
+				HC="${ROOTFILES}${NARROW}${ROOTONLY}"
+				HC="${HC%$'\n'}"
+			fi
 		fi
 		[ -n "$HC" ] || exit 3
 		printf '%s\n' "$HC"

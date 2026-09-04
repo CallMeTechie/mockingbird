@@ -8,7 +8,7 @@ mechanisch abgehakt wird.
 Der Adapter benennt die Befehle, die beweisen, dass der Code noch **läuft** —
 er führt sie nie selbst aus, damit Zeitlimits und Berechtigungen beim
 Aufrufer bleiben. Für Web sind das die in `package.json` real vorhandenen
-Skripte `lint`, `typecheck`, `build`, je Paket eine Zeile
+Skripte `lint`, `typecheck`, `test`, `build`, je Paket eine Zeile
 `<verzeichnis><TAB><befehl><TAB>whole|files`; niemals ein Dauerläufer wie
 `dev`. Die `source_roots:` des Manifests grenzen im Monorepo auf die Pakete
 ein, in denen die Screens wirklich liegen.
@@ -18,6 +18,13 @@ ein npm-Skript `eslint .` sich durch ein angehängtes Pfadargument nicht
 eingrenzen lässt — es liefe erst über alles und dann über den Pfad. Ein
 unbekannter Linter fällt auf den ganzheitlichen Lauf zurück, statt eine
 Eingrenzung zu erfinden, die nicht stimmt.
+
+Im Monorepo entscheidet `source_roots:` nicht allein: ein `files`-Befehl aus
+dem Wurzelverzeichnis **verdrängt** denselben Linter aus einem Paket, weil er
+vom Root aus alle Pakete sieht und diese Stufe ihm Pfade aus dem ganzen Lauf
+übergibt. Ein `whole`-Befehl des Wurzelpakets bleibt nur für eine Art, die
+kein eingegrenztes Paket anbietet — typischerweise die Testsuite, die oben
+liegt (Outpost: 1086 Tests, für einen Client-Scan unsichtbar).
 
 ## Wo Binding und Datenquelle typischerweise aussehen
 

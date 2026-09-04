@@ -158,7 +158,7 @@ mb_adapter_healthcheck() {
 		_mb_rel="${_mb_rel#"$_mb_root"}"
 		_mb_rel="${_mb_rel#/}"
 		[ -n "$_mb_rel" ] || _mb_rel="."
-		for _mb_script in lint typecheck build; do
+		for _mb_script in lint typecheck test build; do
 			# Read the script's value, not just its presence: a file-scoped
 			# run needs the tool's own name, and an empty value means no script.
 			_mb_val="$(awk -v want="$_mb_script" '
