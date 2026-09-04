@@ -64,3 +64,17 @@ den Marker durchreicht. Ohne sie degradiert
 der Locator sauber auf Tier B (Label-String) oder C (Namenskonvention) —
 das ist kein Fehler, nur ein schwächerer Beweis, und das
 Coverage-Regelwerk deckelt Tier-C-Befunde bereits automatisch.
+
+## Laufzeit-CSS
+
+Der Adapter meldet über `mb_adapter_runtime_css` die Mechanismen, mit denen eine
+Web-App zur Laufzeit ganze Regelsätze nachlegt: `createElement("style")` +
+`appendChild`, `CSSStyleSheet.insertRule()`, `adoptedStyleSheets`, ein
+`<style dangerouslySetInnerHTML>`. Gemeldet wird der **Mechanismus mit
+`file:line`**, nie ein Urteil — welches CSS dort tatsächlich landet, steht in
+den Daten der laufenden Anwendung und ist aus dem Repository grundsätzlich nicht
+lesbar.
+
+Ein einzelnes `style.setProperty("--x", v)` gilt bewusst **nicht** als
+Injektion: es setzt einen Wert, keine Regel, und die Tokens-Stufe sieht es
+ohnehin. Sonst läse jedes Projekt mit Akzentfarb-Einstellung als Sonderfall.

@@ -39,7 +39,7 @@ PLUGIN_ROOT="$(dirname -- "$HERE")"
 
 usage() {
 	echo "usage: mockingbird-scope.sh <mode> --root DIR [args]" >&2
-	echo "modes: --validate --elements --locate ID --scope --tokens --check-seam FILE --seam-to-coverage FILE --stage S --coverage FILE --fix-scope --healthcheck --self-test" >&2
+	echo "modes: --validate --elements --locate ID --scope --tokens --check-seam FILE --seam-to-coverage FILE --stage S --coverage FILE --fix-scope --healthcheck --runtime-css --self-test" >&2
 	exit 2
 }
 
@@ -75,7 +75,7 @@ _load_adapter() {
 	local name="$1"
 	local f="$PLUGIN_ROOT/scripts/adapters/$name.sh"
 	[ -f "$f" ] || { echo "unknown adapter: $name" >&2; exit 2; }
-	unset -f mb_adapter_globs mb_adapter_locate mb_adapter_capabilities mb_adapter_token_sources 2>/dev/null
+	unset -f mb_adapter_globs mb_adapter_locate mb_adapter_capabilities mb_adapter_token_sources mb_adapter_runtime_css 2>/dev/null
 	# shellcheck disable=SC1090
 	. "$f"
 }
@@ -213,6 +213,7 @@ case "$MODE" in
 					fname = fline; sub(/[ \t]*:.*$/, "", fname)
 					fval = fline; sub(/^[^:]*:[ \t]*/, "", fval)
 					gsub(/[ \t]/, "", fval); fval = tolower(fval)
+					if (fname in first) multi[fname] = 1; else first[fname] = fval
 					if (index(seen[fval], "|" fname "|") == 0) { seen[fval] = seen[fval] "|" fname "|"; names[fval] = (names[fval] == "" ? fname : names[fval] "|" fname) }
 				}
 				while (match(rest, /(--|\$)[A-Za-z0-9_-]+[ \t]*:[ \t]*#[0-9a-fA-F]{3,8}/)) {
@@ -220,10 +221,27 @@ case "$MODE" in
 					name = line; sub(/[ \t]*:.*$/, "", name)
 					hex = line; sub(/^.*#/, "#", hex); hex = tolower(hex)
 					if (length(hex) == 4) hex = "#" substr(hex,2,1) substr(hex,2,1) substr(hex,3,1) substr(hex,3,1) substr(hex,4,1) substr(hex,4,1)
+					if (name in first) multi[name] = 1; else first[name] = hex
 					if (index(seen[hex], "|" name "|") == 0) { seen[hex] = seen[hex] "|" name "|"; names[hex] = (names[hex] == "" ? name : names[hex] "|" name) }
 				}
 			}
-			END { for (h in names) print h "\t" names[h] }')"
+			END {
+				# A token defined once per theme carries several values.
+				# Replacing a raw value by such a token is safe only when the
+				# raw value belongs to the DEFAULT theme; otherwise the
+				# substitution inverts the colour everywhere else. Those are
+				# marked "themed:" so the exactly-one-token rule in fix-policy
+				# stops treating them as automatic. Found on Outpost:
+				# rgba(0,0,0,.1) matches --gray by value, but only in light.
+				for (h in names) {
+					out = names[h]
+					n = split(out, parts, "|")
+					for (i = 1; i <= n; i++)
+						if (multi[parts[i]] && first[parts[i]] != h)
+							out = (i == 1 ? "themed:" parts[i] : out)
+					print h "\t" out
+				}
+			}')"
 		# Font tokens: "--name: <family list>" whose value ends in a generic family
 		# and carries no size (a family token, not a `font` shorthand -- replacing
 		# font-family: monospace with a shorthand would change size and weight).
@@ -311,6 +329,35 @@ case "$MODE" in
 		TC="$(_meta tokens_css)"; [ -n "$TC" ] && printf '!%s\n' "$TC"
 		for d in $(_meta token_definitions | tr ',' ' '); do [ -n "$d" ] && printf '!%s\n' "$d"; done
 		;;
+	--runtime-css)
+		# What the built stylesheets say is not what the browser paints. A
+		# theme loader, a plugin system or a stored user stylesheet appends
+		# CSS after every <link>, so it wins at equal specificity and wins
+		# outright with !important -- and it lives in the running app's data,
+		# not in the repository, so no stage can read it. Reported as a
+		# mechanism with file:line, never as a finding: injection is
+		# legitimate. It is a MATCH that quietly assumes it away that is not.
+		# Exit 3 when the project injects nothing, so "no such mechanism"
+		# stays distinguishable from "the check did not run".
+		[ -f "$MANIFEST" ] || { echo "no manifest at $MANIFEST" >&2; exit 3; }
+		_load_adapter "$(_resolve_adapter)"
+		SR="$(_meta source_roots | tr ',' ' ')"
+		RC_ANY=0
+		if [ -n "$SR" ]; then
+			for r in $SR; do
+				[ -d "$ROOT/${r%/}" ] || continue
+				OUT="$(mb_adapter_runtime_css "$ROOT/${r%/}" 2>/dev/null)" || continue
+				[ -n "$OUT" ] || continue
+				printf '%s\n' "$OUT" | sed "s|^|${r%/}/|"
+				RC_ANY=1
+			done
+		else
+			OUT="$(mb_adapter_runtime_css "$ROOT" 2>/dev/null)" || true
+			[ -n "$OUT" ] && { printf '%s\n' "$OUT"; RC_ANY=1; }
+		fi
+		[ "$RC_ANY" = 1 ] || exit 3
+		;;
+
 	--healthcheck)
 		# All five review stages read code as text; none of them notices a
 		# ReferenceError. mockingbird writes code itself (fix path, editor

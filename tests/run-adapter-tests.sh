@@ -72,17 +72,46 @@ cat > "$SANDBOX/client/package.json" <<'PKG'
 PKG
 check "a dependency named like a script is not a command" "0" "$(mb_adapter_healthcheck "$SANDBOX" | grep -c '^client	')"
 
+echo "== web adapter: runtime CSS injection =="
+mkdir -p "$SANDBOX/rt"
+cat > "$SANDBOX/rt/ThemeLoader.jsx" <<'EOF'
+const apply = (css) => {
+  let el = document.getElementById("custom-theme");
+  if (!el) { el = document.createElement("style"); document.body.appendChild(el); }
+  el.textContent = css;
+};
+EOF
+cat > "$SANDBOX/rt/Sheet.js" <<'EOF'
+sheet.insertRule(".x{color:red}", 0);
+document.adoptedStyleSheets = [s];
+EOF
+# setProperty sets one value, not a rule -- --tokens already sees that, so it
+# must NOT be reported here or every themed project reads as injecting CSS.
+cat > "$SANDBOX/rt/Prefs.js" <<'EOF'
+document.documentElement.style.setProperty("--accent-color", c);
+EOF
+RT="$(mb_adapter_runtime_css "$SANDBOX/rt")"
+check "createElement(style) is reported" "1" "$(printf '%s\n' "$RT" | grep -c '^ThemeLoader.jsx:3	createElement(style)$')"
+check "insertRule is reported" "1" "$(printf '%s\n' "$RT" | grep -c '	insertRule$')"
+check "adoptedStyleSheets is reported" "1" "$(printf '%s\n' "$RT" | grep -c '	adoptedStyleSheets$')"
+check "setProperty alone is not injection" "0" "$(printf '%s\n' "$RT" | grep -c 'Prefs.js')"
+check "every line is file:line<TAB>mechanism" "0" "$(printf '%s\n' "$RT" | grep -vcE $'^[^\t]+:[0-9]+\t[^\t]+$')"
+mkdir -p "$SANDBOX/quiet"
+printf 'const a = 1;\n' > "$SANDBOX/quiet/plain.js"
+check_rc "a project that injects nothing -> exit 3" 3 bash -c '. "$1/plugin/scripts/adapters/web.sh"; mb_adapter_runtime_css "$2"' _ "$ROOT" "$SANDBOX/quiet"
+
 check_rc "no candidate anywhere -> exit 3" 3 bash -c '. "$1/plugin/scripts/adapters/web.sh"; MB_ADAPTER_ROOT="$2" mb_adapter_locate UI-NOWHERE ""' _ "$ROOT" "$SANDBOX/does-not-exist"
 
 echo "== stub adapters (tui/desktop/mobile) =="
 for name in tui desktop mobile; do
-	unset -f mb_adapter_globs mb_adapter_locate mb_adapter_capabilities mb_adapter_token_sources mb_adapter_healthcheck 2>/dev/null
+	unset -f mb_adapter_globs mb_adapter_locate mb_adapter_capabilities mb_adapter_token_sources mb_adapter_healthcheck mb_adapter_runtime_css 2>/dev/null
 	# shellcheck disable=SC1090  # adapter path is intentionally dynamic (the loop variable)
 	. "$ROOT/plugin/scripts/adapters/$name.sh"
 	check "$name: all capabilities are no" "0" "$(mb_adapter_capabilities | grep -vc '=no$')"
 	check_rc "$name: locate refuses (exit 3)" 3 mb_adapter_locate X ""
 	check "$name: healthcheck is silent" "" "$(mb_adapter_healthcheck "$SANDBOX")"
+	check "$name: runtime-css is silent" "" "$(mb_adapter_runtime_css "$SANDBOX")"
 done
-unset -f mb_adapter_globs mb_adapter_locate mb_adapter_capabilities mb_adapter_token_sources mb_adapter_healthcheck 2>/dev/null
+unset -f mb_adapter_globs mb_adapter_locate mb_adapter_capabilities mb_adapter_token_sources mb_adapter_healthcheck mb_adapter_runtime_css 2>/dev/null
 
 summary "run-adapter-tests"

@@ -9,6 +9,26 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Sixth adapter-contract function `mb_adapter_runtime_css` and the
+  `--runtime-css` mode: the mechanisms by which an app appends whole stylesheets
+  at runtime (`createElement("style")`, `insertRule`, `adoptedStyleSheets`, a
+  `<style dangerouslySetInnerHTML>`), reported as `file:line<TAB>mechanism`.
+  Such CSS lands after every `<link>`, so it wins at equal specificity and wins
+  outright with `!important` — and it lives in the running app's data, not in
+  the repository, so no grep and no stage can read it. The verdict is
+  untouched, since injection is legitimate; what is not legitimate is a MATCH
+  that assumes it away, so a find is carried into the report as an open gap.
+  A lone `setProperty()` sets a value, not a rule, and is deliberately not
+  reported — `--tokens` already sees it. Found on Outpost, 2026-09-04:
+  `UI-SERVERS` stood at MATCH while every radius in the running app was dead,
+  because the account's active theme was the single rule
+  `*, *::before, *::after { border-radius: 0 !important }`, injected by
+  `ThemeLoader.jsx` into `document.body`. Five stages, the seam check and a
+  chromium render of the shipped CSS all agreed the corners were round; the
+  user's screen disagreed three times, and the user was right. 481 checks.
+
+### Added
+
 - `--healthcheck` also names a project's `test` script, and `source_roots:` no
   longer hides the repo root from it. Root `files` commands are offered
   *alongside* the packages' own, not instead of them: which paths a linter really

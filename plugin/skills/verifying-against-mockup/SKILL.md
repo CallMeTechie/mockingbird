@@ -39,6 +39,33 @@ Manifest zu prüfen. Danach `--scope` (ggf. `--since <ref>`), um die
 betroffenen Screens zu bestimmen, und je betroffenem Screen `--elements`,
 um den Coverage-Nenner zu bilden.
 
+Dann, im selben Gate:
+
+```
+mockingbird-scope.sh --runtime-css --root <projekt>
+```
+
+Meldet das etwas, **kann keine Stufe beweisen, wie die Oberfläche aussieht**.
+Was die Stylesheets sagen, ist nicht, was der Browser malt: ein Theme-Loader,
+ein Plugin-System oder ein im eigenen Datenbestand abgelegtes Nutzer-Stylesheet
+hängt CSS **nach** allen `<link>`-Elementen an und gewinnt damit bei gleicher
+Spezifität — mit `!important` ohnehin. Das steht nicht im Repository, sondern in
+einer Zeile der laufenden Anwendung; kein Grep findet es.
+
+Injektion ist völlig legitim und **kippt das Verdikt nicht**. Was nicht legitim
+ist, ist ein MATCH, das sie stillschweigend wegdefiniert. Jeder Fund wird
+deshalb als **offene Lücke** in den Bericht übernommen, mit `file:line` und
+Mechanismus, und der Verdikt-Satz nennt sie: „geprüft gegen die ausgelieferten
+Stylesheets; das Projekt injiziert zur Laufzeit CSS (<file:line>), das hier
+nicht eingesehen werden kann."
+
+Gefunden auf Outpost am 2026-09-04: `UI-SERVERS` stand auf MATCH, während in der
+laufenden Anwendung **jede** Rundung tot war — das aktive Theme des Kontos
+bestand aus `*, *::before, *::after { border-radius: 0 !important }`. Fünf
+Stufen, der Seam-Check und ein Chromium-Render der ausgelieferten CSS waren sich
+einig, dass die Ecken rund sind. Der Bildschirm des Users war es nicht, und der
+User hatte recht.
+
 Ist der aufgelöste Adapter nicht `web` (bislang der einzige vollständig
 implementierte, siehe `references/adapters/`): sofort mit `MISMATCH` und
 der Begründung „Adapter `<name>` nicht implementiert — es wurde nichts

@@ -3,7 +3,7 @@
 # implemented in v0.1 — see references/adapters/{tui,desktop,mobile}.md for
 # the documented-but-not-implemented others.
 #
-# Contract (five functions, the whole adapter surface — see
+# Contract (six functions, the whole adapter surface — see
 # skills/verifying-against-mockup/references/adapters/web.md for the prose
 # half of this contract):
 #   mb_adapter_globs                       -> path patterns, one per line
@@ -16,6 +16,7 @@
 #   mb_adapter_capabilities                -> "key=yes|no", one per line
 #   mb_adapter_token_sources               -> "css-file-glob<TAB>raw-value-regex"
 #   mb_adapter_healthcheck <root>          -> "workdir<TAB>command<TAB>whole|files"
+#   mb_adapter_runtime_css <root>          -> "file:line<TAB>mechanism"
 
 mb_adapter_globs() {
 	cat <<'GLOBS'
@@ -192,4 +193,50 @@ mb_adapter_healthcheck() {
 		done
 	done
 	unset _mb_root _mb_dir _mb_rel _mb_script _mb_val _mb_tool
+}
+
+# Stylesheets are not the last word on what the browser paints. A web app can
+# append CSS at runtime -- a theme loader, a plugin system, a user stylesheet
+# stored in its own database -- and that CSS lands after every <link> in the
+# document, so at equal specificity it wins, and with !important it wins
+# outright. None of the five stages can see it: it is not in the repository at
+# all, it is in a row of the running app's data.
+#
+# So the adapter reports the MECHANISM, never a verdict. Runtime injection is
+# perfectly legitimate; what is not legitimate is a MATCH that silently assumes
+# it away. The caller names it as an open gap so a green verdict cannot be read
+# as "the built UI looks like the artboard".
+#
+# Found on Outpost, 2026-09-04: UI-SERVERS stood at MATCH while every radius in
+# the app was dead, because the account's active theme was one rule --
+# `*, *::before, *::after { border-radius: 0 !important }` -- injected by
+# ThemeLoader.jsx into document.body. Five stages, a seam check and a chromium
+# render of the shipped CSS all agreed the corners were round. The user's
+# screen disagreed, and the user was right.
+mb_adapter_runtime_css() {
+	_mb_root="${1:-.}"
+	_mb_any=0
+
+	# Only mechanisms that can carry a whole stylesheet. A single setProperty()
+	# call sets one custom property and is already visible to --tokens, so it is
+	# deliberately not reported here -- this is about rules, not values.
+	while IFS=: read -r _mb_f _mb_l _mb_rest; do
+		[ -n "$_mb_f" ] || continue
+		case "$_mb_rest" in
+			*createElement*style*)     _mb_kind="createElement(style)" ;;
+			*insertRule*)              _mb_kind="insertRule" ;;
+			*adoptedStyleSheets*)      _mb_kind="adoptedStyleSheets" ;;
+			*dangerouslySetInnerHTML*) _mb_kind="style-dangerouslySetInnerHTML" ;;
+			*)                         _mb_kind="runtime-css" ;;
+		esac
+		printf '%s:%s\t%s\n' "${_mb_f#"$_mb_root"/}" "$_mb_l" "$_mb_kind"
+		_mb_any=1
+	done <<EOF
+$(grep -rnE 'createElement\((["'"'"'])style\1\)|\.insertRule\(|adoptedStyleSheets|<style[^>]*dangerouslySetInnerHTML' \
+	--include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' \
+	--include='*.vue' --include='*.svelte' \
+	"$_mb_root" 2>/dev/null)
+EOF
+
+	[ "$_mb_any" = 1 ] || return 3
 }
