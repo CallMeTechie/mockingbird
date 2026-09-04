@@ -251,3 +251,60 @@ narrowing as legitimate — the decoy class the bench was built for, on real
 code. `states` found a swallowed load error (`catch {}`) and a search with no
 empty state. Both `partial` verdicts asked "which side is wrong?" instead of
 deciding, which is what the mandate demands.
+
+## 2026-09-04 — the three dialogs (Outpost)
+
+Twelve elements across `UI-SERVER-DIALOG`, `UI-TMUX-DIALOG` and
+`UI-DIRECT-CONNECT`, all five stages, no code written — verification only.
+
+| screen | verdict | blockers |
+| - | - | - |
+| `UI-SERVER-DIALOG` | **MATCH** | 0 |
+| `UI-TMUX-DIALOG` | **MISMATCH** | 4 |
+| `UI-DIRECT-CONNECT` | **MISMATCH** | 1 |
+
+`semantic` came back green on all six data-bearing elements, with chains into
+the server controllers. It kept `list-sessions` and `list-windows` apart, saw
+`windowFormat.js:175` narrow the windows to the chosen session, and read the
+personal/organization split on identities as the anchor describes it. Neither
+seam block lost a single link to `--check-seam`.
+
+Both blocker classes are the same shape, and neither is a bug the plugin may
+fix on its own:
+
+- **`UI-TMUX-DIALOG`** — the code connects on a single row click; the manifest
+  and artboard describe select-then-attach with a `selected` state and a
+  dedicated Attach button. `structure` and `flow` found it independently.
+- **`UI-DIRECT-CONNECT-HOST`** — the dialog renders username and auth only and
+  takes its target from the pre-selected entry; the manifest describes a
+  one-off connection with a free host and port. Three stages found it
+  independently, `states` as `unverified:no-locator`.
+
+Both are the case the plugin is built to surface and forbidden to decide: a
+`violated` names both sides and asks which is wrong. Left as a report.
+
+### What the run cost the plugin
+
+The `tokens` reviewer reported four raw values **and then said the tool had
+reported none of them**, rather than reading the silence as a pass. Both causes
+were real (0.1.10):
+
+1. **Functional notations were invisible.** Outpost defines its entire grey
+   scale as `rgba(255,255,255,0.1)` and friends, so a hex-only regex missed the
+   most-copied values in the project. 42 findings had never been reported. The
+   token map now learns rgba/hsl definitions too, so a finding still names its
+   one matching token — and on two of the reviewer's four lines the tool is now
+   the more precise of the two: it resolves `rgba(0,0,0,0.1)` to `--gray`, which
+   the reviewer had called untokenised.
+2. **`var(--x, raw)` was stripped unconditionally.** That is right only while
+   `--x` exists. Outpost has six lines behind `--error-color`, `--border-color`
+   and `--hover-color`, none of which is defined anywhere — so the "fallback" is
+   what the browser paints, every time. Stripping it was a silent pass. The
+   property now has to be defined in a token file, in the scanned CSS, or
+   through `setProperty()` before its fallback is ignored.
+
+Building the fix produced one more finding for the project, not the plugin:
+`ServerDialog/styles.sass` writes `rgba(colors.$primary, .7)` where `$primary`
+is `var(--primary)`. That compiles to `rgba(var(--primary), 0.7)`, which is not
+valid CSS — the browser drops the declaration. Three lines. Reported, not fixed:
+which token replaces it is a design call.
