@@ -10,11 +10,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - `--healthcheck` also names a project's `test` script, and `source_roots:` no
-  longer hides the repo root from it. A `files` command at the root supersedes
-  the same linter inside a package — run from the root a linter sees every
-  package, run from one package it sees only that package, and this stage hands
-  it paths from anywhere the run touched. A `whole` command at the root is kept
-  for a kind no narrowed package offers. Found rebuilding Outpost's connect
+  longer hides the repo root from it. Root `files` commands are offered
+  *alongside* the packages' own, not instead of them: which paths a linter really
+  covers is its config's business, and Outpost's root config matches `server/`
+  and `scripts/` only while the client's covers the client — keeping just one
+  silently stops linting half the repo, which is what a first attempt at this
+  did while still reporting PASS. A `whole` command at the root is kept for a
+  kind no narrowed package offers. Found rebuilding Outpost's connect
   dialog: the change reached into `server/`, and a `source_roots: [client/src]`
   scan had never once offered the 1086 tests sitting behind the root `test`
   script. 472 checks.
