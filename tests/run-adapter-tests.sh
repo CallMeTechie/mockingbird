@@ -27,6 +27,9 @@ check "capabilities: structure=yes" "1" "$(mb_adapter_capabilities | grep -c '^s
 check "capabilities: visual=no" "1" "$(mb_adapter_capabilities | grep -c '^visual=no$')"
 check "capabilities has exactly 7 keys" "7" "$(mb_adapter_capabilities | grep -c '=')"
 check "token_sources has a css glob and a regex" "1" "$(mb_adapter_token_sources | grep -c '\.css')"
+check "token_sources covers sass and scss" "2" "$(mb_adapter_token_sources | grep -cE '\*\.s[ac]ss')"
+check "token_sources covers inline styles in tsx" "1" "$(mb_adapter_token_sources | grep -c '\*\.tsx')"
+check "every token_sources line is glob<TAB>regex" "0" "$(mb_adapter_token_sources | grep -vc $'\t')"
 
 check_rc "locate finds the marker (tier A)" 0 bash -c '. "$1/plugin/scripts/adapters/web.sh"; MB_ADAPTER_ROOT="$2" mb_adapter_locate UI-ORDERS-TABLE "Tabelle offener Bestellungen"' _ "$ROOT" "$SANDBOX"
 OUT="$(MB_ADAPTER_ROOT="$SANDBOX" mb_adapter_locate UI-ORDERS-TABLE "Tabelle offener Bestellungen")"

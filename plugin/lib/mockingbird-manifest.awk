@@ -154,7 +154,8 @@ function dispatch(l,    key, val, rest) {
 			if (val != "") { parse_error("allocations: must introduce a block or be []"); MODE = "skip-block"; return }
 			MODE = "allocations"; return
 		}
-		if (val == "" || val ~ /^[\[{]/) { MODE = "skip-block"; return }
+		if (val ~ /^\[/) { lv = inline_list(val); if (lv != "") meta(key, lv); MODE = "top"; return }
+		if (val == "" || val ~ /^\{/) { MODE = "skip-block"; return }
 		meta(key, stripq(val))
 		MODE = "top"
 		return

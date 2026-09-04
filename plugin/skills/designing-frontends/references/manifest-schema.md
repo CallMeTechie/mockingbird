@@ -35,6 +35,8 @@ resolve to an explanation, not to nothing.
 | `design_system` | yes | Path to `design-system.md` |
 | `mockups_index` | yes | Path to the artboard contact sheet |
 | `tokens_css` | yes | Path to the shared token stylesheet |
+| `source_roots` | recommended in monorepos | Inline list of directories the manifest describes (e.g. `[client/src]`); `--tokens` and `--locate` scan only these. Default: the whole project |
+| `token_definitions` | recommended | Inline list of the project's real token-definition files (e.g. `[client/src/common/styles/_colors.sass]`). `/design-verify`'s tokens stage never flags raw values inside these — everywhere else it does, across css/sass/scss/less and inline `style=` attributes |
 | `adapters` | yes | Map of adapter name to `{locator, attribute?, visual_check}` |
 | `primary_adapter` | yes | Key into `adapters`; the adapter `/design-verify` uses by default |
 | `changelog` | yes | List of `{rev, date, summary, touched: [element/screen ids]}` |

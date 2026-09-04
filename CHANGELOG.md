@@ -65,5 +65,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   becomes a first-class artefact — explicit instructions to the AI on how a
   mockup becomes production code — named in the manifest (`guide:`), carried
   in Channel C, and checked by `mb-design-check.sh`.
-- 388 automated checks across twelve suites; `tests/MANUAL-INTEGRATION.md` for
+- The tokens stage now reads css/sass/scss/less and inline `style=`
+  attributes, not `*.css` alone — found on Outpost, where every stylesheet
+  is Sass and a css-only scan saw nothing. Manifest keys `token_definitions:`
+  (the project's real token files, never flagged) and `source_roots:`
+  (monorepo: scan only these directories). Noise cut from 1740 to 67 real
+  findings on Outpost by not flagging px values, `var(--x, #hex)` fallbacks,
+  `font-family: inherit|var()`, or `@font-face` definition files.
+- Plugin rule, in every skill and the README: a fixable plugin limit found
+  during a run is fixed in the plugin (code, test, commit) — never written
+  into the user's project as a "known gap"; ask only when the fix touches a
+  decision of theirs.
+- 407 automated checks across twelve suites; `tests/MANUAL-INTEGRATION.md` for
   what is LLM-driven and therefore not automatable.

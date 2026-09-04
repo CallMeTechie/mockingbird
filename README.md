@@ -24,6 +24,12 @@ carries it all the way to the implementer — then checks the built result again
 - **It checks meaning, not just looks.** The point is not "does it match the picture". The point
   is whether a dropdown labelled `Abteilung` is actually wired to departments — and not to
   groups, teams or cost centres.
+- **It fixes its own limits instead of documenting them.** When a run hits a
+  plugin limit that is reasonably fixable — an adapter blind to a stylesheet
+  dialect, a parser rejecting a common spelling — the rule for every skill is:
+  fix it in the plugin, add the test, commit, mention it in one line. Never
+  write "known gap" into the user's project; only ask when the fix touches a
+  design decision of theirs.
 - **It refuses to guess.** Every blocking finding must show the last link of the chain with
   `file:line`. No evidence means `unverified`, never `violated`. That rule is enforced in bash,
   not asked for in a prompt.
@@ -72,7 +78,7 @@ claude plugin install /path/to/mockingbird/plugin
 
 ## Status
 
-Built and tested, 388 automated checks across twelve suites: the plugin
+Built and tested, 407 automated checks across twelve suites: the plugin
 scaffold; the hook layer (path detection, two-hash drift state, session-aware
 locking); the design marker block (placement next to preflight's security
 block, idempotent rendering); the manifest parser and validator; propagation
@@ -112,7 +118,7 @@ State lives under `<project>/.claude/` and never under the plugin directory.
 Plain bash, no framework.
 
 ```
-tests/run-all.sh                    # everything (388 checks as of this writing)
+tests/run-all.sh                    # everything (407 checks as of this writing)
 tests/run-hook-tests.sh             # path detection, state, locking, end-to-end hook
 tests/run-block-tests.sh            # marker block: exit contract, fences, idempotent render
 tests/run-manifest-tests.sh         # strict-subset YAML parser, TSV normal form, validation

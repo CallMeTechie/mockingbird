@@ -166,3 +166,14 @@ ausschließlich unter `docs/design/mockups/`. Nach jedem Dispatch das
 Ergebnis kurz gegenlesen — insbesondere: trägt jedes Element ein
 `data-ui-id`, ist jeder deklarierte Zustand als eigener, beschrifteter
 Abschnitt vorhanden.
+
+## Behebbare Grenzen werden behoben, nicht gemeldet
+
+Stößt dieses Skill auf eine Grenze des Plugins, die sich mit vertretbarem
+Aufwand beheben lässt — ein Adapter, der einen Dateityp nicht sieht; ein
+Parser-Subset, das eine gebräuchliche Schreibweise ablehnt; ein Locator, der
+ein übliches Muster nicht kennt — dann wird sie **im Plugin behoben**: Code,
+Test, Commit, ein Satz im Bericht. Nicht als „bekannte Lücke" in das Projekt
+des Users schreiben, nicht fragen, ob man soll. Rückfrage nur, wenn die
+Behebung eine Design-Entscheidung des Users berührt oder das Verhalten für
+andere Projekte spürbar ändert. (Regel des Users vom 2026-09-04.)

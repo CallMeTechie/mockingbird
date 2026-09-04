@@ -49,3 +49,10 @@ Fokusring, Mindestgröße von Trefferflächen (44×44px als Richtwert).
 
 Explizit ausgeschlossene Muster — meist direkt aus Phase 1, Frage 4
 übernommen. Genauso wichtig wie die Vorgaben selbst.
+
+## Was hier NICHT hingehört
+
+Ein Abschnitt „Bekannte Lücke von /design-verify" oder Ähnliches. Eine
+Grenze des Plugins wird im Plugin behoben (siehe SKILL.md), nicht im
+Design-System des Projekts festgehalten.
+

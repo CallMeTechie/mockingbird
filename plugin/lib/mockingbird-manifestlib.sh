@@ -80,8 +80,8 @@ mb_manifest_meta() {
 	if command -v yq >/dev/null 2>&1; then
 		yq -r '
 			to_entries[]
-			| select(.key as $k | ["schema","project","revision","updated","design_system","mockups_index","tokens_css","primary_adapter"] | index($k))
-			| "\(.key)\t\(.value)"
+			| select(.key as $k | ["schema","project","revision","updated","design_system","mockups_index","tokens_css","primary_adapter","token_definitions","source_roots"] | index($k))
+			| "\(.key)\t\(if (.value|type)=="array" then (.value|join(",")) else .value end)"
 		' -- "$file" 2>/dev/null
 		return $?
 	fi
@@ -177,6 +177,12 @@ mb_manifest_validate() {
 			case "$all_ids" in *" $ref "*) ;; *) echo "allocation $spec references unknown id $ref" >&2; problems=$((problems + 1)) ;; esac
 		done
 	done <<< "$(mb_manifest_allocations "$file")"
+
+	if [ -n "${MB_VALIDATE_ROOT:-}" ]; then
+		for d in $(mb_manifest_meta "$file" | awk -F'\t' '$1=="token_definitions"{print $2}' | tr ',' ' '); do
+			[ -f "$MB_VALIDATE_ROOT/$d" ] || { echo "token_definitions: file does not exist: $d" >&2; problems=$((problems + 1)); }
+		done
+	fi
 
 	[ "$problems" -eq 0 ] || return 6
 	return 0

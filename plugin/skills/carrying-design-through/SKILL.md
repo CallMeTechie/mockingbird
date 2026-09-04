@@ -128,3 +128,14 @@ Vollständiger Ablauf in `references/splitting.md`. Kurzfassung:
 Wie preflight nudgt der PostToolUse-Hook nur — er kann dieses Skill nicht
 erzwingen. Ignoriere den Hinweis, wenn die Abweichung beabsichtigt ist
 (z. B. ein Backend-only-Projekt, das der Hook fälschlich für UI-lastig hält).
+
+## Behebbare Grenzen werden behoben, nicht gemeldet
+
+Stößt dieses Skill auf eine Grenze des Plugins, die sich mit vertretbarem
+Aufwand beheben lässt — ein Adapter, der einen Dateityp nicht sieht; ein
+Parser-Subset, das eine gebräuchliche Schreibweise ablehnt; ein Locator, der
+ein übliches Muster nicht kennt — dann wird sie **im Plugin behoben**: Code,
+Test, Commit, ein Satz im Bericht. Nicht als „bekannte Lücke" in das Projekt
+des Users schreiben, nicht fragen, ob man soll. Rückfrage nur, wenn die
+Behebung eine Design-Entscheidung des Users berührt oder das Verhalten für
+andere Projekte spürbar ändert. (Regel des Users vom 2026-09-04.)

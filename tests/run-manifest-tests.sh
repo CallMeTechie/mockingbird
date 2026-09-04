@@ -69,6 +69,11 @@ check "revision" "3" "$(printf '%s\n' "$META" | awk -F'\t' '$1=="revision"{print
 check "primary_adapter" "web" "$(printf '%s\n' "$META" | awk -F'\t' '$1=="primary_adapter"{print $2}')"
 check "flow-collections excluded (retired)" "0" "$(printf '%s\n' "$META" | grep -c '^retired')"
 check "changelog block excluded" "0" "$(printf '%s\n' "$META" | grep -c '^changelog')"
+printf 'token_definitions: [client/a.sass, client/b.scss]\n' > "$SANDBOX/td.yaml"; cat "$VALID" >> "$SANDBOX/td.yaml"
+check "top-level inline list -> meta csv" "client/a.sass,client/b.scss" "$(mb_manifest_meta "$SANDBOX/td.yaml" | awk -F'\t' '$1=="token_definitions"{print $2}')"
+mkdir -p "$SANDBOX/tdroot/docs/design/mockups"; touch "$SANDBOX/tdroot/docs/design/mockups/"{ui-orders,ui-shell}.html
+cp "$SANDBOX/td.yaml" "$SANDBOX/tdroot/docs/design/manifest.yaml"
+MB_VALIDATE_ROOT="$SANDBOX/tdroot" check_rc "token_definitions file missing -> 6" 6 mb_manifest_validate "$SANDBOX/tdroot/docs/design/manifest.yaml"
 
 echo "== mb_valid_id =="
 check_rc "screen id ok" 0 mb_valid_id "UI-ORDERS"

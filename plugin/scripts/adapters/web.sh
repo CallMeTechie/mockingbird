@@ -92,6 +92,24 @@ runtime=no
 CAPS
 }
 
+# One "glob<TAB>raw-value regex" line per source kind. Stylesheet dialects
+# first (a project on Sass would otherwise be invisible to the tokens stage --
+# found on Outpost, 2026-09-04: 14 .sass files with raw hex values that a
+# css-only scan never saw), then inline style attributes in components, where
+# a raw value hides just as easily. Token *definition* files are excluded by
+# the caller (manifest token_definitions: + tokens_css + the _colors/_tokens/
+# _variables naming convention), not here. px values are deliberately NOT
+# flagged: they are everywhere (1px borders, line-heights) and mostly right;
+# flagging them buried the real findings under 1700 lines on Outpost.
 mb_adapter_token_sources() {
-	printf '**/*.css\t(#[0-9a-fA-F]{3,8}\\b|\\b[0-9]+px\\b|font-family\\s*:)\n'
+	cat <<'SRC'
+**/*.css	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
+**/*.sass	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
+**/*.scss	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
+**/*.less	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
+**/*.tsx	style=\{?\{?[^}]*#[0-9a-fA-F]{3,8}\b
+**/*.jsx	style=\{?\{?[^}]*#[0-9a-fA-F]{3,8}\b
+**/*.vue	style="[^"]*#[0-9a-fA-F]{3,8}\b
+**/*.svelte	style="[^"]*#[0-9a-fA-F]{3,8}\b
+SRC
 }

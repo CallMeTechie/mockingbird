@@ -13,7 +13,8 @@
 #   --elements [--screen ID]       flat element TSV (the coverage denominator)
 #   --locate ELEMENT_ID            adapter locator candidates, tier-ranked
 #   --scope [--since REF]          screens touched by uncommitted/recent changes
-#   --tokens                       raw values outside the token file
+#   --tokens                       raw values in stylesheets (css/sass/scss/less) and
+#                                  inline style attributes, outside token-definition files
 #   --check-seam FILE              apply the four anti-hallucination rules to
 #                                   an MB-SEAM block, downgrading as required
 #   --seam-to-coverage FILE --stage semantic|flow
@@ -116,7 +117,12 @@ case "$MODE" in
 		LABEL="$(mb_tsv_field "$ROW" "$MB_F_ELEMENT_LABEL")"
 		[ "$LABEL" = "-" ] && LABEL=""
 		_load_adapter "$(_resolve_adapter)"
-		MB_ADAPTER_ROOT="$ROOT" mb_adapter_locate "$ELEMENT" "$LABEL"
+		SR="$(_meta source_roots | cut -d, -f1)"
+		if [ -n "$SR" ] && [ -d "$ROOT/$SR" ]; then
+			MB_ADAPTER_ROOT="$ROOT/$SR" mb_adapter_locate "$ELEMENT" "$LABEL" | sed "s|\t|\t$SR/|"
+		else
+			MB_ADAPTER_ROOT="$ROOT" mb_adapter_locate "$ELEMENT" "$LABEL"
+		fi
 		;;
 
 	--scope)
@@ -155,17 +161,34 @@ case "$MODE" in
 	--tokens)
 		[ -f "$MANIFEST" ] || exit 3
 		_load_adapter "$(_resolve_adapter)"
-		SRC_LINE="$(mb_adapter_token_sources)"
-		[ -n "$SRC_LINE" ] || exit 0
-		RAW_RE="${SRC_LINE#*$'\t'}"
-		TOKENS_CSS="$ROOT/$(_meta tokens_css)"
-		while IFS= read -r f; do
-			[ -n "$f" ] || continue
-			case "$f" in "$TOKENS_CSS") continue ;; esac
-			grep -nE -- "$RAW_RE" "$f" 2>/dev/null | while IFS=: read -r ln content; do
-				printf '%s:%s:%s\n' "${f#"$ROOT"/}" "$ln" "$(printf '%s' "$content" | sed 's/^[[:space:]]*//')"
+		SRC="$(mb_adapter_token_sources)"
+		[ -n "$SRC" ] || exit 0
+		# Files that DEFINE tokens are the one place raw values belong: the
+		# manifest's tokens_css, anything listed under token_definitions:, and
+		# the usual naming convention for such files.
+		EXCL="$ROOT/$(_meta tokens_css)"$'\n'
+		for d in $(_meta token_definitions | tr ',' ' '); do EXCL="$EXCL$ROOT/$d"$'\n'; done
+		# source_roots: [client/src] restricts every scan to the code this
+		# manifest describes; a monorepo's other apps are not in scope.
+		ROOTS="$(_meta source_roots | tr ',' ' ')"; [ -n "$ROOTS" ] || ROOTS="."
+		SCAN=""; for r in $ROOTS; do SCAN="$SCAN $ROOT/$r"; done
+		printf '%s\n' "$SRC" | while IFS=$'\t' read -r glob re; do
+			[ -n "$glob" ] || continue
+			name="${glob##*/}"
+			# shellcheck disable=SC2086  # SCAN is a deliberate word list of directories
+			find $SCAN \( -path '*/node_modules/*' -o -path '*/dist/*' -o -path '*/build/*' -o -path '*/.git/*' \) -prune -o -type f -name "$name" -print 2>/dev/null \
+			| sed 's|/\./|/|' | while IFS= read -r f; do
+				case "$EXCL" in *"$f"$'\n'*) continue ;; esac
+				case "$(basename "$f")" in _colors.*|_tokens.*|_variables.*|tokens.css|_theme.*) continue ;; esac
+				grep -q '@font-face' "$f" 2>/dev/null && continue   # a file that defines fonts is a definition file
+				# A hex inside var(--x, #hex) is a token WITH a fallback, not a raw
+				# value -- it was 40% of the noise on Outpost. Strip such fallbacks
+				# before matching; whatever hex is left stands on its own.
+				sed -E 's/var\(--[A-Za-z0-9_-]+,[^)]*\)/var(--_)/g' "$f" 2>/dev/null | grep -nE -- "$re" | grep -vE 'font-family[[:space:]]*:[[:space:]]*(inherit|initial|unset|var\()' | while IFS=: read -r ln content; do
+					printf '%s:%s:%s\n' "${f#"$ROOT"/}" "$ln" "$(printf '%s' "$content" | sed 's/^[[:space:]]*//')"
+				done
 			done
-		done < <(find "$ROOT" -path '*/node_modules/*' -prune -o -type f -name '*.css' -print 2>/dev/null)
+		done
 		;;
 
 	--fix-scope)
