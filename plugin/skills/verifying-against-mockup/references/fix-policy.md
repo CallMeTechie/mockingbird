@@ -74,6 +74,16 @@ ausgeführt wird:
 Schlägt einer fehl, ist das Ergebnis **kein MATCH**, egal was die fünf
 Stufen sagen: der Code läuft nicht.
 
+**Ein Fehlschlag auf `files` ist erst dann deiner, wenn er auf der Basislinie
+fehlt.** Der Befehl misst die ganze Datei, nicht deinen Diff — fasst du eine
+Datei mit vorhandenen Verstößen auch nur an, meldet er sie dir. Bevor du einen
+Fehlschlag als eigenen Schaden behandelst oder ihn behebst: dieselbe Datei aus
+`HEAD` in eine temporäre Kopie schreiben und den Befehl darauf laufen lassen.
+Kommt derselbe Befund, ist er Bestand — melden, nicht stillschweigend
+mitreparieren, und das Verdikt nicht daran aufhängen. Auf Outpost
+(2026-09-04) war es genau ein toter `refreshIdentities` in einer Datei, die
+nur ein Marker berührt hatte.
+
 Der Grund steht im Kopf von `plugin/scripts/adapters/web.sh`: alle fünf
 Stufen lesen Code als Text, keine bemerkt einen `ReferenceError`. Auf
 Outpost (2026-09-04) rief ein nach Anleitung gebauter Umschalter `t(...)`

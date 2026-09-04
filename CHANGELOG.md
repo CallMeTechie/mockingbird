@@ -7,6 +7,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `fix-policy.md`: a `files` healthcheck failure counts as yours only when it is
+  absent from the baseline. The command measures the whole file, not the diff,
+  so touching a file that already had violations reports them back at you —
+  write the `HEAD` copy to a temp path, run the same command on it, and if the
+  finding is there too it is pre-existing: report it, do not quietly repair it,
+  and do not hang the verdict on it. Found on Outpost: a dead
+  `refreshIdentities` in a file a marker had merely brushed.
+
 ## [0.1.10] - 2026-09-04
 
 ### Added
