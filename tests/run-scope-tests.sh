@@ -167,7 +167,7 @@ cat > "$PROJ/package.json" <<'PKG'
 { "name": "root", "scripts": { "lint": "eslint server scripts", "test": "node --test" } }
 PKG
 HCOUT="$("$SCOPE" --healthcheck --root "$PROJ" 2>/dev/null)"
-check "healthcheck names a lint command" "1" "$(printf '%s\n' "$HCOUT" | grep -c 'eslint')"
+check "healthcheck names at least one lint command" "yes" "$([ "$(printf '%s\n' "$HCOUT" | grep -c 'eslint')" -ge 1 ] && echo yes || echo no)"
 check "each line carries its whole|files scope" "0" "$(printf '%s\n' "$HCOUT" | grep -vcE $'\t(whole|files)$')"
 check "source_roots narrow it to the package the screens live in" "0" "$(printf '%s\n' "$HCOUT" | grep -c '^landing	')"
 # A monorepo keeps its whole test suite at the top; a client-only scan would
@@ -175,8 +175,12 @@ check "source_roots narrow it to the package the screens live in" "0" "$(printf 
 check "a root command of a kind no package offers is kept" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^\.	npm run --silent test	whole$')"
 # Run from the root a linter sees every package; run from one package it sees
 # only that package, and this stage hands it paths from anywhere.
-check "the root file-scoped linter wins over the package one" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^\.	npx eslint	files$')"
-check "and the superseded package linter is dropped" "0" "$(printf '%s\n' "$HCOUT" | grep -c '^client	npx eslint	files$')"
+# Which paths a linter really covers is its config's business, not this
+# script's: Outpost's root config matches server/ and scripts/ only and calls a
+# client file "ignored". Keeping just one of the two silently stops linting half
+# the repo, so both are offered and the caller runs both.
+check "the root file-scoped linter is offered" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^\.	npx eslint	files$')"
+check "and the package one is kept alongside it" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^client	npx eslint	files$')"
 check "the package build still stands on its own" "1" "$(printf '%s\n' "$HCOUT" | grep -c '^client	npm run --silent build	whole$')"
 check_rc "healthcheck without a manifest -> 3" 3 "$SCOPE" --healthcheck --root "$SANDBOX/nowhere"
 rm -rf "$PROJ/client" "$PROJ/landing" "$PROJ/package.json"

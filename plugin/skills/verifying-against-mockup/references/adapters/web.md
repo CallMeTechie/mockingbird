@@ -19,12 +19,16 @@ eingrenzen lässt — es liefe erst über alles und dann über den Pfad. Ein
 unbekannter Linter fällt auf den ganzheitlichen Lauf zurück, statt eine
 Eingrenzung zu erfinden, die nicht stimmt.
 
-Im Monorepo entscheidet `source_roots:` nicht allein: ein `files`-Befehl aus
-dem Wurzelverzeichnis **verdrängt** denselben Linter aus einem Paket, weil er
-vom Root aus alle Pakete sieht und diese Stufe ihm Pfade aus dem ganzen Lauf
-übergibt. Ein `whole`-Befehl des Wurzelpakets bleibt nur für eine Art, die
-kein eingegrenztes Paket anbietet — typischerweise die Testsuite, die oben
-liegt (Outpost: 1086 Tests, für einen Client-Scan unsichtbar).
+Im Monorepo entscheidet `source_roots:` nicht allein. `files`-Befehle des
+Wurzelpakets kommen **zusätzlich** zu denen der Pakete, nicht an ihrer Stelle:
+welche Pfade ein Linter wirklich abdeckt, bestimmt seine Konfiguration, nicht
+dieses Skript. Outposts Wurzelkonfiguration trifft nur `server/` und
+`scripts/` und meldet eine Client-Datei als „ignored"; die Client-Konfiguration
+deckt den Client ab. Nur einen von beiden zu behalten legt stillschweigend das
+Linting des halben Repos still. Ein `whole`-Befehl des Wurzelpakets bleibt
+dagegen nur für eine Art, die kein eingegrenztes Paket anbietet — typischerweise
+die Testsuite, die oben liegt (Outpost: 1086 Tests, für einen Client-Scan
+unsichtbar).
 
 ## Wo Binding und Datenquelle typischerweise aussehen
 

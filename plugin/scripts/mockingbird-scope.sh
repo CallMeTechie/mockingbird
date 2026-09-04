@@ -344,18 +344,20 @@ case "$MODE" in
 			done <<EOF
 $HC
 EOF
-			# What the repo root keeps, and why it is not simply dropped:
+			# What the repo root keeps:
 			#
-			#  - a "files" command from the root WINS over the same tool in a
-			#    package, and the package one is discarded. Run from the root a
-			#    linter sees every package; run from one package it sees only
-			#    that package, and this stage hands it paths from anywhere the
-			#    run touched. Outpost: the root lints server and scripts, the
-			#    client lints only itself, and this run changed both.
-			#  - a "whole" command is kept only for a kind no narrowed package
-			#    offers. A monorepo often keeps the entire test suite at the top
-			#    (Outpost: 1086 tests behind the root "test" script, invisible
-			#    to a client-only scan).
+			#  - every "files" command, ALONGSIDE the packages' own. Which paths
+			#    a linter actually covers is decided by its config, not by this
+			#    script: Outpost's root config matches server/ and scripts/ only
+			#    and reports a client file as "ignored", while the client config
+			#    covers the client. Keeping only one of them silently stops
+			#    linting half the repo -- which is exactly what happened when
+			#    this code preferred the root. Running both costs one extra pass
+			#    and covers everything.
+			#  - a "whole" command only for a kind no narrowed package offers. A
+			#    monorepo often keeps the entire test suite at the top (Outpost:
+			#    1086 tests behind the root "test" script, invisible to a
+			#    client-only scan).
 			if [ -n "$NARROW" ]; then
 				ROOTFILES=""
 				while IFS="$(printf '\t')" read -r wd cmd scope; do
@@ -371,19 +373,6 @@ EOF
 				done <<EOF
 $HC
 EOF
-				if [ -n "$ROOTFILES" ]; then
-					# Drop the package-scoped file commands the root supersedes.
-					KEPT=""
-					while IFS="$(printf '\t')" read -r wd cmd scope; do
-						[ -n "$wd" ] || continue
-						[ "$scope" = "files" ] && continue
-						KEPT="${KEPT}${wd}$(printf '\t')${cmd}$(printf '\t')${scope}
-"
-					done <<EOF
-$NARROW
-EOF
-					NARROW="$KEPT"
-				fi
 				HC="${ROOTFILES}${NARROW}${ROOTONLY}"
 				HC="${HC%$'\n'}"
 			fi
