@@ -82,4 +82,14 @@ check "value drift on a single-defined token is reported" "1" "$(printf '%s\n' "
 check "mirror-only token is reported" "1" "$(printf '%s\n' "$OUT" | grep -c 'nur im Spiegel.*--ghost')"
 check "themed token (defined twice) is name-checked only" "0" "$(printf '%s\n' "$OUT" | grep -c 'weicht ab: --accent')"
 
+echo "== tracked run state is a finding =="
+git init -q "$P" 2>/dev/null
+mkdir -p "$P/.claude"; printf 'x\ty\tz\n' > "$P/.claude/.mockingbird-verified"
+OUT="$("$CHECK" "$P")"
+check "untracked run state is not a finding" "0" "$(printf '%s\n' "$OUT" | grep -c 'Laufzustand wird versioniert')"
+git -C "$P" add -f .claude/.mockingbird-verified >/dev/null 2>&1
+OUT="$("$CHECK" "$P")"
+check "tracked run state is reported" "1" "$(printf '%s\n' "$OUT" | grep -c 'Laufzustand wird versioniert')"
+git -C "$P" rm -q --cached .claude/.mockingbird-verified >/dev/null 2>&1
+
 summary "run-design-check-tests"

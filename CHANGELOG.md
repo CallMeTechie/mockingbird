@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-09-04
+
+### Added
+
+- `/design-check` reports run state under `<project>/.claude/` that git tracks — it dirties the working tree on every run and travels to other machines as if it were a fact about them. Happened on Outpost via a broad `git add -A`. 435 checks.
+
 ## [0.1.6] - 2026-09-04
 
 ### Added

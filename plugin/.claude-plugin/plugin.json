@@ -1,7 +1,7 @@
 {
 	"$schema": "https://anthropic.com/claude-code/plugin.schema.json",
 	"name": "mockingbird",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"description": "Frontend design that survives the project. Works out a UI design with you, writes HTML artboards plus a machine-readable manifest to docs/design/, and carries that design through spec, plan and every task brief so agentic implementation cannot drift away from it.",
 	"author": {
 		"name": "CallMeTechie",

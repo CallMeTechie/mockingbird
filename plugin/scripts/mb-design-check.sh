@@ -72,6 +72,19 @@ if [ -n "$TOKDEFS" ] && [ -f "$ROOT/$TOKENS_CSS" ]; then
 	rm -f "${TMPDIR:-/tmp}/mb-tok.$$"
 fi
 
+# 1d. Run state under <project>/.claude/ is per-machine, per-run bookkeeping.
+# If git tracks it, every run dirties the working tree and the state travels
+# to other machines as if it were a fact about them (happened on Outpost:
+# a broad `git add -A` swept .mockingbird-verified into a commit).
+if [ -d "$ROOT/.git" ] && command -v git >/dev/null 2>&1; then
+	TRACKED="$(git -C "$ROOT" ls-files ".claude/.mockingbird-*" 2>/dev/null)"
+	if [ -n "$TRACKED" ]; then
+		while IFS= read -r t; do
+			[ -n "$t" ] && finding "Laufzustand wird versioniert (gehört in .gitignore: .claude/.mockingbird-*)" "$t" "important"
+		done <<< "$TRACKED"
+	fi
+fi
+
 # 2. Every spec with a block: freshness and the always-present facts.
 for spec in "$ROOT"/docs/superpowers/specs/*-design.md; do
 	[ -f "$spec" ] || continue
