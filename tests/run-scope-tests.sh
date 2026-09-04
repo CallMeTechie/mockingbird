@@ -104,7 +104,27 @@ printf '.m\n  font-family: monospace\n.n\n  font-family: "Fira Code", monospace\
 check "font-family: monospace -> the one family token, not the size-bearing shorthand" "2" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'fonts.sass:[0-9]*:--font-mono:')"
 check "font-family sans-serif -> --font-sans" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'fonts.sass:[0-9]*:--font-sans:')"
 check "raw value with no token -> -" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'match.css:4:-:')"
-check "var(--x, #hex) fallback is a token, not a raw value" "0" "$("$SCOPE" --tokens --root "$PROJ" | grep -c \'fallback.sass\')"
+# --error-color is nowhere defined in this fixture, so the "fallback" is what
+# the browser actually paints -- hiding it would be a silent pass. The rule is
+# about whether the property exists, not about the var() syntax.
+check "var(--x, raw) is reported when --x is defined NOWHERE" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'fallback.sass')"
+printf '.g\n  color: var(--rogue-match, #ff00aa)\n' > "$PROJ/client/styles/realfallback.sass"
+check "var(--x, raw) stays silent when --x IS defined" "0" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'realfallback.sass')"
+printf '.h\n  color: var(--from-js, #ff00aa)\n' > "$PROJ/client/styles/jsfallback.sass"
+printf 'el.style.setProperty("--from-js", theme.accent);\n' > "$PROJ/client/theme.js"
+check "a property set through setProperty() counts as defined" "0" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'jsfallback.sass')"
+
+echo "== --tokens: functional colour notations =="
+# Outpost defines its whole grey scale as rgba(), so a hex-only scan was blind
+# to the most-copied values in the project.
+printf '.i\n  border-color: rgba(255, 255, 255, 0.2)\n  background: hsl(210, 40%%, 12%%)\n' > "$PROJ/client/styles/func.sass"
+printf ':root{--gray-strong: rgba(255,255,255,0.2);}\n' >> "$PROJ/docs/design/mockups/tokens.css"
+check "rgba() with literal numbers is a raw value" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'func.sass.*rgba')"
+check "and the matching token is named despite the spacing" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'func.sass.*--gray-strong')"
+check "hsl() with literal numbers is a raw value too" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'func.sass.*hsl')"
+printf '.j\n  background: rgba(colors.$primary, 0.7)\n' > "$PROJ/client/styles/sassvar.sass"
+check "rgba() around a variable is a token in use, not a raw value" "0" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'sassvar.sass')"
+check "definition files keep their own rgba values unflagged" "0" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'mockups/tokens.css')"
 check "--locate under source_roots ignores files outside" "0" "$("$SCOPE" --locate UI-SHELL-NAV --root "$PROJ" | grep -c 'src/Nav.tsx')"
 
 echo "== --fix-scope =="

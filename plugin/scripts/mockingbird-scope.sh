@@ -176,6 +176,22 @@ case "$MODE" in
 		# manifest describes; a monorepo's other apps are not in scope.
 		ROOTS="$(_meta source_roots | tr ',' ' ')"; [ -n "$ROOTS" ] || ROOTS="."
 		SCAN=""; for r in $ROOTS; do SCAN="$SCAN $ROOT/$r"; done
+		# Every custom property the project actually defines -- in the token
+		# definition files (which sit outside source_roots and would otherwise
+		# be missed), as a CSS declaration anywhere in the scanned code, or
+		# through setProperty() from JS (themes are applied that way). A var(--x, raw) whose --x is in this list is a
+		# token with a fallback that never renders, and stays unflagged. One
+		# whose --x is NOT defined anywhere is not a fallback at all: the raw
+		# value is what the browser paints, every time. Outpost had four such
+		# lines behind --error-color, --border-color and --hover-color, none
+		# of which exists.
+		# shellcheck disable=SC2086  # SCAN is a deliberate word list
+		DEFINED="|$(
+			{ printf '%s' "$EXCL" | while IFS= read -r tf; do [ -f "$tf" ] && grep -hoE -- '--[A-Za-z0-9_-]+[ \t]*:' "$tf" 2>/dev/null | sed -E 's/[ \t]*:$//'; done
+			  grep -rhoE -- '--[A-Za-z0-9_-]+[ \t]*:' $SCAN --include=*.css --include=*.sass --include=*.scss --include=*.less 2>/dev/null | sed -E 's/[ \t]*:$//'
+			  grep -rhoE -- "setProperty\([\"']--[A-Za-z0-9_-]+" $SCAN --include=*.js --include=*.jsx --include=*.ts --include=*.tsx 2>/dev/null | sed -E "s/.*[\"'](--)/\1/"
+			} | sort -u | tr '\n' '|'
+		)"
 		# Token map: hex value -> defining token name(s), built from the same
 		# definition files that are excluded from scanning. This is what makes
 		# a finding fixable: fix-policy.md allows an automatic replacement only
@@ -187,6 +203,18 @@ case "$MODE" in
 				# every "--name: #hex" / "$name: #hex" on the line, not just one at
 				# the start: a minified or one-line :root{...} block is common
 				rest = $0
+				# Functional notations first: --gray: rgba(255,255,255,.1) is how
+				# a themed grey scale is usually written, and without this the
+				# map cannot name the token for such a finding, and the
+				# exactly-one-token rule in fix-policy never fires on it.
+				fnrest = $0
+				while (match(fnrest, /(--|\$)[A-Za-z0-9_-]+[ \t]*:[ \t]*(rgba?|hsla?)\([0-9][^)]*\)/)) {
+					fline = substr(fnrest, RSTART, RLENGTH); fnrest = substr(fnrest, RSTART + RLENGTH)
+					fname = fline; sub(/[ \t]*:.*$/, "", fname)
+					fval = fline; sub(/^[^:]*:[ \t]*/, "", fval)
+					gsub(/[ \t]/, "", fval); fval = tolower(fval)
+					if (index(seen[fval], "|" fname "|") == 0) { seen[fval] = seen[fval] "|" fname "|"; names[fval] = (names[fval] == "" ? fname : names[fval] "|" fname) }
+				}
 				while (match(rest, /(--|\$)[A-Za-z0-9_-]+[ \t]*:[ \t]*#[0-9a-fA-F]{3,8}/)) {
 					line = substr(rest, RSTART, RLENGTH); rest = substr(rest, RSTART + RLENGTH)
 					name = line; sub(/[ \t]*:.*$/, "", name)
@@ -220,6 +248,14 @@ case "$MODE" in
 					case "$fams" in "") printf -- '-' ;; *"|"*) printf 'ambiguous:%s' "$fams" ;; *) printf '%s' "$fams" ;; esac
 					return ;;
 			esac
+			local fn
+			fn="$(printf '%s' "$1" | grep -oE '(rgba?|hsla?)\([0-9][^)]*\)' | head -1 | tr -d ' \t' | tr 'A-Z' 'a-z')"
+			if [ -n "$fn" ]; then
+				local fnames
+				fnames="$(printf '%s\n' "$TOKMAP" | awk -F'\t' -v v="$fn" '$1==v{print $2; exit}')"
+				case "$fnames" in "") printf -- '-' ;; *"|"*) printf 'ambiguous:%s' "$fnames" ;; *) printf '%s' "$fnames" ;; esac
+				return
+			fi
 			hex="$(printf '%s' "$1" | grep -oE '#[0-9a-fA-F]{3,8}\b' | head -1 | tr 'A-Z' 'a-z')"
 			[ -n "$hex" ] || { printf -- '-'; return; }
 			[ "${#hex}" -eq 4 ] && hex="#${hex:1:1}${hex:1:1}${hex:2:1}${hex:2:1}${hex:3:1}${hex:3:1}"
@@ -236,10 +272,23 @@ case "$MODE" in
 				case "$EXCL" in *"$f"$'\n'*) continue ;; esac
 				case "$(basename "$f")" in _colors.*|_tokens.*|_variables.*|tokens.css|_theme.*) continue ;; esac
 				grep -q '@font-face' "$f" 2>/dev/null && continue   # a file that defines fonts is a definition file
-				# A hex inside var(--x, #hex) is a token WITH a fallback, not a raw
-				# value -- it was 40% of the noise on Outpost. Strip such fallbacks
-				# before matching; whatever hex is left stands on its own.
-				sed -E 's/var\(--[A-Za-z0-9_-]+,[^)]*\)/var(--_)/g' "$f" 2>/dev/null | grep -nE -- "$re" | grep -vE 'font-family[[:space:]]*:[[:space:]]*(inherit|initial|unset|var\()' | while IFS=: read -r ln content; do
+				# A raw value inside var(--x, raw) is a token WITH a fallback, not a
+				# raw value -- it was 40% of the noise on Outpost. Strip such
+				# fallbacks before matching, but ONLY when --x is really defined
+				# somewhere. If it is not, the fallback is the effective value and
+				# hiding it would be a silent pass.
+				awk -v defs="$DEFINED" '{
+					out = ""; rest = $0
+					while (match(rest, /var\(--[A-Za-z0-9_-]+,[^)]*\)/)) {
+						pre = substr(rest, 1, RSTART - 1)
+						m = substr(rest, RSTART, RLENGTH)
+						rest = substr(rest, RSTART + RLENGTH)
+						nm = m; sub(/^var\(/, "", nm); sub(/,.*$/, "", nm)
+						if (index(defs, "|" nm "|") > 0) m = "var(--_)"
+						out = out pre m
+					}
+					print out rest
+				}' "$f" 2>/dev/null | grep -nE -- "$re" | grep -vE 'font-family[[:space:]]*:[[:space:]]*(inherit|initial|unset|var\()' | while IFS=: read -r ln content; do
 					printf '%s:%s:%s:%s\n' "${f#"$ROOT"/}" "$ln" "$(token_for "$content")" "$(printf '%s' "$content" | sed 's/^[[:space:]]*//')"
 				done
 			done

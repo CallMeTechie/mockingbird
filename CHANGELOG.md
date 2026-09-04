@@ -7,13 +7,37 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-09-04
+
+### Added
+
+- The tokens stage sees functional colour notations: `rgb()`, `rgba()`, `hsl()`
+  and `hsla()` count as raw values whenever they open with a digit, and the
+  token map learns them from the definition files, so a finding can still name
+  the one token that matches. Outpost defines its entire grey scale that way
+  (`--gray: rgba(255,255,255,0.1)`), so a hex-only scan was blind to the
+  most-copied values in the project — 42 findings that had never been reported,
+  found by a reviewer who noticed the tool had said nothing where four raw
+  values sat. `rgba(colors.$primary, .7)` does not open with a digit and stays
+  unflagged: that is a token in use, however badly.
+
+### Changed
+
+- A `var(--x, raw)` fallback is only treated as "a token with a fallback" when
+  `--x` is really defined somewhere — in a token definition file, as a CSS
+  declaration in the scanned code, or through `setProperty()` from JS. When the
+  property exists nowhere, the fallback is not a fallback: it is what the
+  browser paints, every time, and hiding it was a silent pass. Outpost had six
+  such lines behind `--error-color`, `--border-color` and `--hover-color`, none
+  of which exists.
+
 ### Fixed
 
 - `mb-design-check.sh` accepts `--root DIR` like every other command (0.1.4 gave
   it to the others and missed this one). It took the flag as the project path
   itself and died with `kein Manifest unter --root/docs/design/manifest.yaml`,
   which reads like a broken project rather than a mis-parsed call. An unknown
-  option is now refused instead of being treated as a path. 460 checks.
+  option is now refused instead of being treated as a path. 468 checks.
 
 ## [0.1.9] - 2026-09-04
 

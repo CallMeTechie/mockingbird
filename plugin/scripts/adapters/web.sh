@@ -100,7 +100,13 @@ runtime=no
 CAPS
 }
 
-# One "glob<TAB>raw-value regex" line per source kind. Stylesheet dialects
+# One "glob<TAB>raw-value regex" line per source kind. Functional colour
+# notations count as raw values whenever they open with a digit: Outpost
+# defines its entire grey scale as rgba() (--gray: rgba(255,255,255,0.1)),
+# so a hex-only scan was blind to the most-copied values in the project --
+# found 2026-09-04 by a reviewer who noticed the tool had reported nothing
+# where four raw values sat. `rgba(colors.$x, .5)` does NOT open with a digit
+# and stays unflagged: it is a token being used, however badly. Stylesheet dialects
 # first (a project on Sass would otherwise be invisible to the tokens stage --
 # found on Outpost, 2026-09-04: 14 .sass files with raw hex values that a
 # css-only scan never saw), then inline style attributes in components, where
@@ -111,10 +117,10 @@ CAPS
 # flagging them buried the real findings under 1700 lines on Outpost.
 mb_adapter_token_sources() {
 	cat <<'SRC'
-**/*.css	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
-**/*.sass	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
-**/*.scss	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
-**/*.less	(#[0-9a-fA-F]{3,8}\b|font-family\s*:)
+**/*.css	(#[0-9a-fA-F]{3,8}\b|(rgba?|hsla?)\([0-9]|font-family\s*:)
+**/*.sass	(#[0-9a-fA-F]{3,8}\b|(rgba?|hsla?)\([0-9]|font-family\s*:)
+**/*.scss	(#[0-9a-fA-F]{3,8}\b|(rgba?|hsla?)\([0-9]|font-family\s*:)
+**/*.less	(#[0-9a-fA-F]{3,8}\b|(rgba?|hsla?)\([0-9]|font-family\s*:)
 **/*.tsx	style=\{?\{?[^}]*#[0-9a-fA-F]{3,8}\b
 **/*.jsx	style=\{?\{?[^}]*#[0-9a-fA-F]{3,8}\b
 **/*.vue	style="[^"]*#[0-9a-fA-F]{3,8}\b
