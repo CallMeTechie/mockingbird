@@ -99,6 +99,10 @@ check "3-digit token hex expands to match a 6-digit raw value" "1" "$("$SCOPE" -
 check "sass \$variable definitions count as tokens (case-insensitive)" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'match.css:3:$primary:')"
 printf 'export const C = () => <i style={{ color: "#123456" }}>y</i>;\n' > "$PROJ/client/Inline2.tsx"   # inside source_roots
 check "inline style value resolves to a sass-defined custom property" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'client/Inline2.tsx:1:--sassy:')"
+printf ':root{--font-mono: "JetBrains Mono", ui-monospace, monospace; --type-mono: 400 0.875rem/1.5 var(--font-mono); --font-sans: "Plus Jakarta Sans", sans-serif;}\n' >> "$PROJ/docs/design/mockups/tokens.css"
+printf '.m\n  font-family: monospace\n.n\n  font-family: "Fira Code", monospace\n.s\n  font-family: Inter, sans-serif\n' > "$PROJ/client/styles/fonts.sass"
+check "font-family: monospace -> the one family token, not the size-bearing shorthand" "2" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'fonts.sass:[0-9]*:--font-mono:')"
+check "font-family sans-serif -> --font-sans" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -c 'fonts.sass:[0-9]*:--font-sans:')"
 check "raw value with no token -> -" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'match.css:4:-:')"
 check "var(--x, #hex) fallback is a token, not a raw value" "0" "$("$SCOPE" --tokens --root "$PROJ" | grep -c \'fallback.sass\')"
 check "--locate under source_roots ignores files outside" "0" "$("$SCOPE" --locate UI-SHELL-NAV --root "$PROJ" | grep -c 'src/Nav.tsx')"

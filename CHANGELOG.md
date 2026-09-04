@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-04
+
+### Added
+
+- `--tokens` resolves `font-family` findings to a *family* token (`--font-mono`, `--font-sans`), never to a size-bearing `font` shorthand — replacing `font-family: monospace` with `--type-mono` would change size and weight. 415 checks.
+
 ## [0.1.1] - 2026-09-04
 
 ### Added

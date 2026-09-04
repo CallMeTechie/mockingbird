@@ -194,8 +194,30 @@ case "$MODE" in
 				}
 			}
 			END { for (h in names) print h "\t" names[h] }')"
+		# Font tokens: "--name: <family list>" whose value ends in a generic family
+		# and carries no size (a family token, not a `font` shorthand -- replacing
+		# font-family: monospace with a shorthand would change size and weight).
+		FONTMAP="$(printf '%s' "$EXCL" | while IFS= read -r tf; do [ -f "$tf" ] && cat "$tf"; done | awk '
+			{ rest = $0
+			  while (match(rest, /(--|\$)[A-Za-z0-9_-]+[ \t]*:[ \t]*[^;{}]*(monospace|sans-serif|serif|system-ui)[ \t]*;?/)) {
+				line = substr(rest, RSTART, RLENGTH); rest = substr(rest, RSTART + RLENGTH)
+				if (line ~ /[0-9](px|rem|em|%)/) continue      # shorthand with a size: not a family token
+				name = line; sub(/[ \t]*:.*$/, "", name)
+				gen = (line ~ /monospace/) ? "monospace" : (line ~ /sans-serif|system-ui/) ? "sans-serif" : "serif"
+				if (index(seen[gen], "|" name "|") == 0) { seen[gen] = seen[gen] "|" name "|"; names[gen] = (names[gen] == "" ? name : names[gen] "|" name) }
+			  } }
+			END { for (g in names) print g "\t" names[g] }')"
 		token_for() { # token_for <content> -> token | ambiguous:a|b | -
 			local hex
+			case "$1" in
+				*font-family*)
+					local gen="" fams
+					case "$1" in *monospace*|*"font-family: mono"*|*"font-family:mono"*) gen=monospace ;; *sans-serif*|*system-ui*) gen=sans-serif ;; *serif*) gen=serif ;; esac
+					[ -n "$gen" ] || { printf -- '-'; return; }
+					fams="$(printf '%s\n' "$FONTMAP" | awk -F'\t' -v g="$gen" '$1==g{print $2; exit}')"
+					case "$fams" in "") printf -- '-' ;; *"|"*) printf 'ambiguous:%s' "$fams" ;; *) printf '%s' "$fams" ;; esac
+					return ;;
+			esac
 			hex="$(printf '%s' "$1" | grep -oE '#[0-9a-fA-F]{3,8}\b' | head -1 | tr 'A-Z' 'a-z')"
 			[ -n "$hex" ] || { printf -- '-'; return; }
 			[ "${#hex}" -eq 4 ] && hex="#${hex:1:1}${hex:1:1}${hex:2:1}${hex:2:1}${hex:3:1}${hex:3:1}"
