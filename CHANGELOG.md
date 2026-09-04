@@ -7,6 +7,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-04
+
 ### Added
 
 - Initial scaffold: marketplace and plugin manifests, MIT license, CI workflow
@@ -77,5 +79,5 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   into the user's project as a "known gap"; ask only when the fix touches a
   decision of theirs.
 - `--tokens` names the matching token per finding (`file:line:<token|ambiguous:a|b|->:content`), built from `tokens_css` + `token_definitions:` — the input fix-policy's "exactly one exact token" rule needs to auto-fix anything at all. Two tokens sharing a value stay a report.
-- 412 automated checks across twelve suites; `tests/MANUAL-INTEGRATION.md` for
+- 413 automated checks across twelve suites; `tests/MANUAL-INTEGRATION.md` for
   what is LLM-driven and therefore not automatable.
