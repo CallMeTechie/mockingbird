@@ -52,3 +52,32 @@ Element) ist die Re-Verifikation LLM-frei — ein erneuter Lauf von
 `--tokens`/`--locate`/grep genügt. Für `semantic`/`flow`-Fixes läuft genau
 ein gezielter Reviewer-Dispatch auf den betroffenen Elementen, kein zweiter
 voller Fan-out.
+
+## Lauffähigkeit — vor jedem Verdikt, nach jedem Schreiben
+
+```
+mockingbird-scope.sh --healthcheck --root <projekt>
+```
+
+Gibt `<arbeitsverzeichnis><TAB><befehl><TAB>whole|files` je Zeile aus
+(Exit 3, wenn das Projekt keinen solchen Befehl anbietet — das ist kein
+Freispruch, sondern „nicht prüfbar"). Die dritte Spalte entscheidet, wie
+ausgeführt wird:
+
+- **`files`** — die soeben geänderten Pfade anhängen. Ein projektweiter Lint
+  auf einem Bestandsprojekt ist rot, bevor mockingbird irgendetwas anfasst
+  (Outpost: 80 vorhandene Fehler); als Tor sagt er dann nichts aus. Gemessen
+  wird, was dieser Lauf geschrieben hat.
+- **`whole`** — unverändert ausführen; der Befehl ist nur ganzheitlich
+  sinnvoll (Build, Typecheck).
+
+Schlägt einer fehl, ist das Ergebnis **kein MATCH**, egal was die fünf
+Stufen sagen: der Code läuft nicht.
+
+Der Grund steht im Kopf von `plugin/scripts/adapters/web.sh`: alle fünf
+Stufen lesen Code als Text, keine bemerkt einen `ReferenceError`. Auf
+Outpost (2026-09-04) rief ein nach Anleitung gebauter Umschalter `t(...)`
+in einer Komponente, die den `useTranslation`-Hook nie geholt hatte — die
+Seite wäre beim Rendern abgestürzt, und `structure`, `flow` **und** der
+Seam-Check haben ihn durchgewinkt. mockingbird schreibt selbst Code; wer
+Code schreibt, prüft, dass er läuft.

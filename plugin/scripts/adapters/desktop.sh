@@ -20,3 +20,4 @@ runtime=no
 CAPS
 }
 mb_adapter_token_sources() { :; }
+mb_adapter_healthcheck() { :; }

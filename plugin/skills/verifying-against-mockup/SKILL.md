@@ -110,6 +110,16 @@ Bericht zusammenstellen: Blocker, Important, offene Lücken — direkt aus der
    erneuter `--tokens`/`--locate`-Lauf (LLM-frei). Für `semantic`/`flow`-
    Fixes ein gezielter Reviewer-Dispatch nur auf den betroffenen Elementen.
    **Hartes Cap: eine Runde.**
+6. **Lauffähigkeit prüfen**, bevor ein Verdikt fällt:
+   `mockingbird-scope.sh --healthcheck --root <projekt>` nennt die Befehle
+   (`<verzeichnis><TAB><befehl><TAB>whole|files`); bei `files` die soeben
+   geänderten Pfade anhängen, bei `whole` unverändert ausführen — ein
+   projektweiter Lint auf einem Bestandsprojekt ist sonst rot, bevor
+   mockingbird etwas anfasst. Schlägt einer fehl, ist
+   das Ergebnis kein MATCH — keine der fünf Stufen bemerkt einen
+   `ReferenceError`, sie lesen Code als Text. Auf Outpost (2026-09-04)
+   kam ein `t(...)` ohne den `useTranslation`-Hook durch alle Stufen und
+   durch den Seam-Check. Details: `references/fix-policy.md`.
 
 ## Schritt 7 — State und Freigabe
 

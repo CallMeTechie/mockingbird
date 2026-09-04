@@ -133,6 +133,24 @@ printf 'UI-SHELL-NAV | structure | ok | -\n' > "$SANDBOX/cov-shell.txt"
 check_rc "--coverage --screen scopes the denominator (0)" 0 "$SCOPE" --coverage "$SANDBOX/cov-shell.txt" --root "$PROJ" --screen UI-SHELL
 check_rc "missing manifest -> 3" 3 "$SCOPE" --coverage "$SANDBOX/cov.txt" --root "$SANDBOX/nowhere"
 
+echo "== --healthcheck =="
+# Named, never run: the caller decides about timeouts and permissions.
+mkdir -p "$PROJ/client"
+cat > "$PROJ/client/package.json" <<'PKG'
+{ "name": "c", "scripts": { "lint": "eslint .", "build": "vite build" } }
+PKG
+mkdir -p "$PROJ/landing"
+cat > "$PROJ/landing/package.json" <<'PKG'
+{ "name": "l", "scripts": { "lint": "eslint ." } }
+PKG
+HCOUT="$("$SCOPE" --healthcheck --root "$PROJ" 2>/dev/null)"
+check "healthcheck names a lint command" "1" "$(printf '%s\n' "$HCOUT" | grep -c 'eslint')"
+check "each line carries its whole|files scope" "0" "$(printf '%s\n' "$HCOUT" | grep -vcE $'\t(whole|files)$')"
+check "source_roots narrow it to the package the screens live in" "0" "$(printf '%s\n' "$HCOUT" | grep -c '^landing	')"
+check_rc "healthcheck without a manifest -> 3" 3 "$SCOPE" --healthcheck --root "$SANDBOX/nowhere"
+rm -rf "$PROJ/client" "$PROJ/landing"
+check_rc "no runnable command in the project -> 3 (not a silent pass)" 3 "$SCOPE" --healthcheck --root "$PROJ"
+
 echo "== --self-test =="
 check_rc "self-test passes" 0 "$SCOPE" --self-test
 

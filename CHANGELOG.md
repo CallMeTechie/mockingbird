@@ -7,6 +7,39 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-09-04
+
+### Added
+
+- Fifth adapter-contract function `mb_adapter_healthcheck` and the
+  `--healthcheck` mode: the commands that prove the code still RUNS, named
+  (`workdir<TAB>command<TAB>whole|files`) but never run by the script, so
+  timeouts and permissions stay with the caller. Web reads the
+  `lint`/`typecheck`/`build` scripts a project actually defines, never a
+  long-runner like `dev`, and the manifest's `source_roots:` narrow a monorepo
+  to the packages the screens live in. The third column matters on a real
+  project: a repo-wide lint is red before mockingbird touches anything
+  (Outpost: 80 pre-existing errors), so `lint` comes back as `files` and names
+  the tool directly — the caller appends the paths this run changed — while a
+  build stays `whole`. The verify chain runs them before any verdict; a failure is never a
+  MATCH. All five stages read code as text and none of them notices a
+  `ReferenceError` — on Outpost a control built from the guide called `t(...)`
+  in a component that never took the `useTranslation` hook, and `structure`,
+  `flow` and the seam check all passed it. mockingbird writes code itself, so
+  "does it still run" belongs in the deterministic core. 455 checks.
+
+### Changed
+
+- `flow` and `semantic` stage mandates: a rule, a config or a condition cited
+  as evidence — or as counter-evidence — has to be able to take effect at all.
+  Check the parent selector, whether the class is really rendered, whether the
+  required ancestor exists in the real DOM (`createPortal` does not move it),
+  and look into the built artefact when there is one. Found twice on Outpost in
+  one run: a reviewer refuted a working rule, and a `:has()` selector that
+  looked present could never match across a portal boundary. A dead rule is the
+  most dangerous evidence there is — it survives the seam check because its
+  `file:line` exists.
+
 ## [0.1.8] - 2026-09-04
 
 ### Fixed

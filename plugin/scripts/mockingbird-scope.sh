@@ -23,6 +23,8 @@
 #                                  turn a checked MB-SEAM block into MB-COVERAGE lines
 #   --coverage FILE [--screen ID]  MB-COVERAGE bookkeeping + verdict (denominator: one screen if given)
 #   --fix-scope                    adapter globs, as an editor allowlist
+#   --healthcheck                  commands that prove the code still RUNS
+#                                  ("workdir<TAB>command"); named, never run here
 #   --self-test                    built-in assertions, no LLM, no fixtures
 #
 # Exit codes (mode-specific; --self-test is 0/1 pass-fail only):
@@ -37,7 +39,7 @@ PLUGIN_ROOT="$(dirname -- "$HERE")"
 
 usage() {
 	echo "usage: mockingbird-scope.sh <mode> --root DIR [args]" >&2
-	echo "modes: --validate --elements --locate ID --scope --tokens --check-seam FILE --seam-to-coverage FILE --stage S --coverage FILE --fix-scope --self-test" >&2
+	echo "modes: --validate --elements --locate ID --scope --tokens --check-seam FILE --seam-to-coverage FILE --stage S --coverage FILE --fix-scope --healthcheck --self-test" >&2
 	exit 2
 }
 
@@ -259,6 +261,42 @@ case "$MODE" in
 		} | awk 'NF && !seen[$0]++'
 		TC="$(_meta tokens_css)"; [ -n "$TC" ] && printf '!%s\n' "$TC"
 		for d in $(_meta token_definitions | tr ',' ' '); do [ -n "$d" ] && printf '!%s\n' "$d"; done
+		;;
+	--healthcheck)
+		# All five review stages read code as text; none of them notices a
+		# ReferenceError. mockingbird writes code itself (fix path, editor
+		# agent), so "does it still run" belongs in the deterministic core --
+		# see the header comment on web.sh's mb_adapter_healthcheck. Output is
+		# advisory input for the caller, which decides whether to run it: exit
+		# 3 when the project offers no such command, so "nothing to run" stays
+		# distinguishable from "everything passed".
+		[ -f "$MANIFEST" ] || { echo "no manifest at $MANIFEST" >&2; exit 3; }
+		_load_adapter "$(_resolve_adapter)"
+		HC="$(mb_adapter_healthcheck "$ROOT" 2>/dev/null)"
+		# Narrow to the packages the manifest actually points at. A monorepo
+		# answers with every workspace it has (Outpost: landing, connector,
+		# client) and linting the ones no screen lives in is pure wall-clock.
+		# The repo-root entry is kept only when nothing more specific matched,
+		# so a single-package project still gets its command.
+		SR="$(_meta source_roots | tr ',' ' ')"
+		if [ -n "$SR" ] && [ -n "$HC" ]; then
+			NARROW=""
+			while IFS="$(printf '\t')" read -r wd cmd; do
+				[ -n "$wd" ] || continue
+				[ "$wd" = "." ] && continue
+				for r in $SR; do
+					case "${r%/}/" in
+						"${wd%/}/"*) NARROW="${NARROW}${wd}$(printf '\t')${cmd}
+"; break ;;
+					esac
+				done
+			done <<EOF
+$HC
+EOF
+			[ -n "$NARROW" ] && HC="${NARROW%$'\n'}"
+		fi
+		[ -n "$HC" ] || exit 3
+		printf '%s\n' "$HC"
 		;;
 
 	--check-seam)

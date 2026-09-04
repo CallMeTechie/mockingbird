@@ -31,3 +31,16 @@ END
 `terminal` ist hier das tatsächliche Sprungziel (Route/Modal-ID/Endpoint).
 Gleiche vier Urteilsklassen und dieselbe Beweislast wie bei `semantic` —
 kein `violated` ohne belegtes `terminal`, kein Tier-C-`violated`.
+
+## Ein angeführter Beleg muss greifen können
+
+Führst du eine CSS-Regel, eine Konfiguration oder eine Bedingung als Beleg
+**oder** als Gegenbeleg an, prüfe zuerst, ob sie zur Laufzeit überhaupt
+wirken kann: welchen Elternselektor sie hat, ob die genannte Klasse real
+gerendert wird, ob der verlangte Vorfahre im echten DOM existiert. Achtung
+bei `createPortal` und Teleport-Mechanismen — sie verschieben den echten
+DOM nicht, ein Nachfahren-Selektor über die Portal-Grenze greift nie. Wo es
+ein gebautes Artefakt gibt (`dist/`), ist der Blick hinein der billigste
+Beweis. Eine Regel, die vorhanden aussieht, aber nie greift, ist der
+gefährlichste Beleg: sie besteht den Seam-Check, weil ihr `file:line`
+existiert.

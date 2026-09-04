@@ -3,6 +3,22 @@
 Hinweisliste, keine Regeln — hilft beim Suchen, ist keine Checkliste, die
 mechanisch abgehakt wird.
 
+## Lauffähigkeit (`mb_adapter_healthcheck`)
+
+Der Adapter benennt die Befehle, die beweisen, dass der Code noch **läuft** —
+er führt sie nie selbst aus, damit Zeitlimits und Berechtigungen beim
+Aufrufer bleiben. Für Web sind das die in `package.json` real vorhandenen
+Skripte `lint`, `typecheck`, `build`, je Paket eine Zeile
+`<verzeichnis><TAB><befehl><TAB>whole|files`; niemals ein Dauerläufer wie
+`dev`. Die `source_roots:` des Manifests grenzen im Monorepo auf die Pakete
+ein, in denen die Screens wirklich liegen.
+
+`lint` kommt als `files` und nennt das Werkzeug direkt (`npx eslint`), weil
+ein npm-Skript `eslint .` sich durch ein angehängtes Pfadargument nicht
+eingrenzen lässt — es liefe erst über alles und dann über den Pfad. Ein
+unbekannter Linter fällt auf den ganzheitlichen Lauf zurück, statt eine
+Eingrenzung zu erfinden, die nicht stimmt.
+
 ## Wo Binding und Datenquelle typischerweise aussehen
 
 - **React**: `useState`/`useEffect` mit einem Fetch, ein Query-Hook

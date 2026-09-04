@@ -30,6 +30,10 @@ carries it all the way to the implementer — then checks the built result again
   fix it in the plugin, add the test, commit, mention it in one line. Never
   write "known gap" into the user's project; only ask when the fix touches a
   design decision of theirs.
+- **It checks that the code still runs.** All five review stages read code as
+  text, and none of them notices a `ReferenceError`. Since mockingbird writes
+  code itself, the adapter names the project's own lint/build commands and the
+  verify chain runs them before it will call anything a match.
 - **It refuses to guess.** Every blocking finding must show the last link of the chain with
   `file:line`. No evidence means `unverified`, never `violated`. That rule is enforced in bash,
   not asked for in a prompt.
@@ -78,7 +82,7 @@ claude plugin install /path/to/mockingbird/plugin
 
 ## Status
 
-Built and tested, 439 automated checks across twelve suites: the plugin
+Built and tested, 455 automated checks across twelve suites: the plugin
 scaffold; the hook layer (path detection, two-hash drift state, session-aware
 locking); the design marker block (placement next to preflight's security
 block, idempotent rendering); the manifest parser and validator; propagation
@@ -120,13 +124,13 @@ disables the nudges for a project.
 Plain bash, no framework.
 
 ```
-tests/run-all.sh                    # everything (439 checks as of this writing)
+tests/run-all.sh                    # everything (455 checks as of this writing)
 tests/run-hook-tests.sh             # path detection, state, locking, end-to-end hook
 tests/run-block-tests.sh            # marker block: exit contract, fences, idempotent render
 tests/run-manifest-tests.sh         # strict-subset YAML parser, TSV normal form, validation
 tests/run-render-tests.sh           # rendering the block, inserting it, propagating failures
 tests/run-plan-propagation-tests.sh # the design table survives the REAL superpowers task-brief cut
-tests/run-adapter-tests.sh          # the four-function adapter contract; web's locator tiers
+tests/run-adapter-tests.sh          # the five-function adapter contract; web's locator tiers
 tests/run-coverage-tests.sh         # every seam rule and every coverage/verdict rule, one by one
 tests/run-scope-tests.sh            # the mockingbird-scope.sh CLI wiring
 tests/run-wellformed-tests.sh       # agent/command/skill frontmatter, no AskUserQuestion in agents

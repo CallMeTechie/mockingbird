@@ -3,7 +3,7 @@
 # implemented in v0.1 — see references/adapters/{tui,desktop,mobile}.md for
 # the documented-but-not-implemented others.
 #
-# Contract (four functions, the whole adapter surface — see
+# Contract (five functions, the whole adapter surface — see
 # skills/verifying-against-mockup/references/adapters/web.md for the prose
 # half of this contract):
 #   mb_adapter_globs                       -> path patterns, one per line
@@ -15,6 +15,7 @@
 #   mb_adapter_locate <element-id> <label> -> "tier<TAB>file:line", one per line
 #   mb_adapter_capabilities                -> "key=yes|no", one per line
 #   mb_adapter_token_sources               -> "css-file-glob<TAB>raw-value-regex"
+#   mb_adapter_healthcheck <root>          -> "workdir<TAB>command<TAB>whole|files"
 
 mb_adapter_globs() {
 	cat <<'GLOBS'
@@ -119,4 +120,70 @@ mb_adapter_token_sources() {
 **/*.vue	style="[^"]*#[0-9a-fA-F]{3,8}\b
 **/*.svelte	style="[^"]*#[0-9a-fA-F]{3,8}\b
 SRC
+}
+
+# Commands that prove the code still RUNS, one
+# "workdir<TAB>command<TAB>whole|files" line each. It only names them; running
+# them is the caller's job, so timeouts and permissions stay where the user can
+# see them.
+#
+# The third column is what makes this usable on a real project. A repo-wide
+# lint on an existing codebase is red before mockingbird touches anything
+# (Outpost: 80 pre-existing errors), so as a gate it says nothing. "files"
+# means the caller appends the paths it just changed; "whole" means the command
+# is only meaningful across the whole package (a build, a typecheck) and runs
+# as-is. For a file-scoped run the underlying tool is named directly -- an npm
+# script like "eslint ." cannot be narrowed by appending a path, it would just
+# lint everything and then the path.
+#
+# Why this is part of the adapter contract at all: mockingbird writes code (the
+# fix path, the editor agent), and all five review stages read code as text.
+# None of them notices a ReferenceError. Found on Outpost, 2026-09-04: a control
+# built from the guide called t(...) in a component that never took the
+# useTranslation hook — it would have crashed on render, and structure, flow
+# and the seam check all passed it.
+mb_adapter_healthcheck() {
+	_mb_root="${1:-.}"
+	# The manifest's source_roots are where components live; a monorepo keeps
+	# its package.json next to them, not necessarily at the top.
+	for _mb_dir in "$_mb_root" "$_mb_root"/*/; do
+		[ -f "$_mb_dir/package.json" ] || continue
+		_mb_rel="${_mb_dir%/}"
+		_mb_rel="${_mb_rel#"$_mb_root"}"
+		_mb_rel="${_mb_rel#/}"
+		[ -n "$_mb_rel" ] || _mb_rel="."
+		for _mb_script in lint typecheck build; do
+			# Read the script's value, not just its presence: a file-scoped
+			# run needs the tool's own name, and an empty value means no script.
+			_mb_val="$(awk -v want="$_mb_script" '
+				/"scripts"[ \t]*:/ { in_s = 1 }
+				in_s && $0 ~ "\"" want "\"[ \t]*:" {
+					line = $0
+					sub(".*\"" want "\"[ \t]*:[ \t]*\"", "", line)
+					sub("\".*", "", line)
+					print line
+					exit
+				}
+				in_s && /^[ \t]*\}/ { in_s = 0 }
+			' "$_mb_dir/package.json" 2>/dev/null)"
+			[ -n "$_mb_val" ] || continue
+			case "$_mb_script" in
+				lint)
+					# First word of the script IS the tool (eslint, biome,
+					# oxlint, ...). Anything else and we cannot narrow safely,
+					# so fall back to the whole-package run.
+					_mb_tool="${_mb_val%% *}"
+					case "$_mb_tool" in
+						eslint|biome|oxlint|standard|xo)
+							printf '%s\tnpx %s\tfiles\n' "$_mb_rel" "$_mb_tool" ;;
+						*)
+							printf '%s\tnpm run --silent %s\twhole\n' "$_mb_rel" "$_mb_script" ;;
+					esac
+					;;
+				*)
+					printf '%s\tnpm run --silent %s\twhole\n' "$_mb_rel" "$_mb_script" ;;
+			esac
+		done
+	done
+	unset _mb_root _mb_dir _mb_rel _mb_script _mb_val _mb_tool
 }
