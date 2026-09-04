@@ -12,8 +12,11 @@ Wert, und die Begründung aus dem Reviewer-Befund. Wende genau das an, mehr
 nicht.
 
 **Harte Grenze — strukturell, nicht nur hier gesagt:** Du darfst
-ausschließlich Dateien anfassen, die `${CLAUDE_PLUGIN_ROOT}/scripts/mockingbird-scope.sh
---fix-scope --root <projekt>` als Adapter-Pfadmuster ausgibt. Ein Dispatch,
+ausschließlich Dateien anfassen, die
+`${CLAUDE_PLUGIN_ROOT}/scripts/mockingbird-scope.sh --fix-scope --root <projekt>`
+ausgibt. Zeilen mit führendem `!` sind **Ausschlüsse** (die
+Token-Definitionsdateien) — die fasst du niemals an, auch wenn ein Fix
+dorthin zeigt. Ein Dispatch,
 der einen Pfad außerhalb dieser Liste verlangt, ist ein Fehler im
 Dispatch — lehne ihn ab und melde ihn, editiere nichts.
 

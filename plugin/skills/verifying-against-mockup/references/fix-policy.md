@@ -28,10 +28,13 @@ melden.
   plausibel aussehende leere Hüllen. Nur melden, mit Skizze.
 - **`docs/design/manifest.yaml`.** Die Verify-Kette schreibt es nie —
   Design ändert man im Design-Dialog, mit dem User.
-- **Alles außerhalb der Adapter-Globs.** Strukturell durchgesetzt, nicht
-  nur hier gesagt: der Konsolidator holt die Allowlist per
-  `mockingbird-scope.sh --fix-scope` und der `editor`-Agent verweigert
-  jeden Edit außerhalb.
+- **Alles außerhalb der Allowlist.** Strukturell durchgesetzt, nicht nur
+  hier gesagt: der Konsolidator holt sie per
+  `mockingbird-scope.sh --fix-scope`, der `editor`-Agent verweigert jeden
+  Edit außerhalb. Die Allowlist ist die Vereinigung aus Komponenten-Globs
+  (Element-Fixes) und Stylesheet-Globs (Token-Fixes); Zeilen mit `!` sind
+  Ausschlüsse — die Token-**Definitionsdateien** (`tokens_css`,
+  `token_definitions`) sind nie editierbar, sie sind die Quelle.
 
 ## Mechanik
 

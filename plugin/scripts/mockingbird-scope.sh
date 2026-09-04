@@ -245,8 +245,20 @@ case "$MODE" in
 		;;
 
 	--fix-scope)
+		# The editor's allowlist is the union of two spaces, not just the
+		# locator's: element fixes live in components, token fixes live in
+		# stylesheets. Giving mb_adapter_globs both roles blocked every token
+		# fix (found on Outpost: 16 findings, all in .sass, none allowed).
+		# Lines starting with "!" are exclusions -- the files that DEFINE
+		# tokens are never editable, they are the source of truth.
+		[ -f "$MANIFEST" ] || { echo "no manifest at $MANIFEST" >&2; exit 3; }
 		_load_adapter "$(_resolve_adapter)"
-		mb_adapter_globs
+		{
+			mb_adapter_globs
+			mb_adapter_token_sources | cut -f1
+		} | awk 'NF && !seen[$0]++'
+		TC="$(_meta tokens_css)"; [ -n "$TC" ] && printf '!%s\n' "$TC"
+		for d in $(_meta token_definitions | tr ',' ' '); do [ -n "$d" ] && printf '!%s\n' "$d"; done
 		;;
 
 	--check-seam)

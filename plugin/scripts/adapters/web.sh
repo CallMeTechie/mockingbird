@@ -7,6 +7,11 @@
 # skills/verifying-against-mockup/references/adapters/web.md for the prose
 # half of this contract):
 #   mb_adapter_globs                       -> path patterns, one per line
+#                                             (components: the locator's search
+#                                             space. The editor's allowlist is
+#                                             this UNION token_sources, minus
+#                                             the token definition files --
+#                                             assembled by --fix-scope, not here.)
 #   mb_adapter_locate <element-id> <label> -> "tier<TAB>file:line", one per line
 #   mb_adapter_capabilities                -> "key=yes|no", one per line
 #   mb_adapter_token_sources               -> "css-file-glob<TAB>raw-value-regex"

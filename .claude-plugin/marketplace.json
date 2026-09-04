@@ -9,7 +9,7 @@
 		{
 			"name": "mockingbird",
 			"source": "./plugin",
-			"version": "0.1.7",
+			"version": "0.1.8",
 			"description": "Works out a UI design with you, writes HTML artboards plus a machine-readable manifest to docs/design/, carries that design through spec, plan and every task brief so agentic implementation cannot drift away from it, and verifies the built result against the mockup — including whether a control labelled \"Abteilung\" is actually wired to departments."
 		}
 	]

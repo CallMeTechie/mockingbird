@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-09-04
+
+### Fixed
+
+- `--fix-scope` returns the union of component globs and stylesheet globs, with the token definition files as `!` exclusions. Giving `mb_adapter_globs` both the locator and the allowlist role blocked every token fix — the first real `--fix` run on Outpost had 16 findings, all in `.sass`, none of them editable. 439 checks.
+
 ## [0.1.7] - 2026-09-04
 
 ### Added

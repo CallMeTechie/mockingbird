@@ -109,6 +109,10 @@ check "--locate under source_roots ignores files outside" "0" "$("$SCOPE" --loca
 
 echo "== --fix-scope =="
 check "fix-scope lists web globs" "1" "$("$SCOPE" --fix-scope --root "$PROJ" | grep -c '\*\*/\*\.tsx')"
+check "fix-scope also allows stylesheets (token fixes live there)" "1" "$("$SCOPE" --fix-scope --root "$PROJ" | grep -c '^\*\*/\*\.sass$')"
+check "fix-scope excludes the token mirror" "1" "$("$SCOPE" --fix-scope --root "$PROJ" | grep -c '^!docs/design/mockups/tokens.css$')"
+check "fix-scope excludes token_definitions files" "1" "$("$SCOPE" --fix-scope --root "$PROJ" | grep -c '^!client/styles/_colors.sass$')"
+check "fix-scope lists no glob twice" "0" "$("$SCOPE" --fix-scope --root "$PROJ" | grep -v '^!' | sort | uniq -d | wc -l | tr -d ' ')"
 
 echo "== --check-seam =="
 printf 'UI-X | tier=A | render=- | binding=- | source=- | handler=- | terminal=- | found=x | violated\n' > "$SANDBOX/seam.txt"
