@@ -64,4 +64,22 @@ printf '# Plan\n\n### Task 1: x\n\nsteps\n' > "$P/docs/superpowers/plans/2026-09
 OUT="$("$CHECK" "$P")"
 check "plan not naming the manifest is reported" "1" "$(printf '%s\n' "$OUT" | grep -c 'nennt docs/design/manifest.yaml nicht')"
 
+echo "== token mirror parity =="
+cp "$ROOT/tests/fixtures/manifest/valid.yaml" "$P/docs/design/manifest.yaml"
+cp "$ROOT/tests/fixtures/plans/orders-plan.md" "$P/docs/superpowers/plans/2026-09-03-orders.md"   # undo the earlier Design:-line removal
+"$INSERT" "$SPEC" --root "$P" --spec docs/superpowers/specs/2026-09-03-orders-design.md >/dev/null
+printf '# Plan\n\ndocs/design/manifest.yaml\n\n### Task 1: x\n\n**Design:** kein UI-Anteil.\n' > "$P/docs/superpowers/plans/2026-09-03-other.md"
+mkdir -p "$P/client/styles"; printf '$x: 1\n:root\n  --accent: #314BD3\n  --space-2: 0.5rem\n:root[data-theme="light"]\n  --accent: #314BD3\n' > "$P/client/styles/_colors.sass"
+printf 'token_definitions: [client/styles/_colors.sass]\n' >> "$P/docs/design/manifest.yaml"
+printf ':root { --accent: #314bd3; --space-2: 0.5rem; --ui-scale: 1; }\n' > "$P/docs/design/mockups/tokens.css"
+"$INSERT" "$SPEC" --root "$P" --spec docs/superpowers/specs/2026-09-03-orders-design.md >/dev/null
+OUT="$("$CHECK" "$P")"; RC=$?
+check "mirror in sync (case-insensitive hex, ui-scale ignored) -> 0" "0" "$RC"
+printf ':root { --accent: #314bd3; --space-2: 0.75rem; --ghost: 1px; }\n' > "$P/docs/design/mockups/tokens.css"
+"$INSERT" "$SPEC" --root "$P" --spec docs/superpowers/specs/2026-09-03-orders-design.md >/dev/null
+OUT="$("$CHECK" "$P")"
+check "value drift on a single-defined token is reported" "1" "$(printf '%s\n' "$OUT" | grep -c 'Token-Wert weicht ab: --space-2')"
+check "mirror-only token is reported" "1" "$(printf '%s\n' "$OUT" | grep -c 'nur im Spiegel.*--ghost')"
+check "themed token (defined twice) is name-checked only" "0" "$(printf '%s\n' "$OUT" | grep -c 'weicht ab: --accent')"
+
 summary "run-design-check-tests"

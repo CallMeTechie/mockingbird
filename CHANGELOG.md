@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-04
+
+### Added
+
+- `mb-design-check.sh` checks the artboards' token mirror (`tokens_css`) against the real definitions (`token_definitions`): a token only in the mirror, a token missing from the mirror, or a value that drifted on a single-defined token is a finding. Themed tokens are name-checked. Found on Outpost: the artboards were drawn against a mirror, and nothing had ever compared the two.
+
 ## [0.1.2] - 2026-09-04
 
 ### Added

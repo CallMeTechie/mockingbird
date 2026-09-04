@@ -43,6 +43,35 @@ done > "${TMPDIR:-/tmp}/mb-guides.$$"
 if [ -s "${TMPDIR:-/tmp}/mb-guides.$$" ]; then cat "${TMPDIR:-/tmp}/mb-guides.$$"; findings=$((findings + $(wc -l < "${TMPDIR:-/tmp}/mb-guides.$$"))); fi
 rm -f "${TMPDIR:-/tmp}/mb-guides.$$"
 
+# 1c. The artboards' token mirror (tokens_css) must not drift from the
+# project's real token definitions (token_definitions): every --name in the
+# mirror must be defined for real, and a name defined exactly once for real
+# must carry the same value in the mirror. Themed tokens (defined more than
+# once) are name-checked only.
+TOKENS_CSS="$(mb_manifest_meta "$MANIFEST" | awk -F'\t' '$1=="tokens_css"{print $2; exit}')"
+TOKDEFS="$(mb_manifest_meta "$MANIFEST" | awk -F'\t' '$1=="token_definitions"{print $2; exit}' | tr ',' ' ')"
+if [ -n "$TOKDEFS" ] && [ -f "$ROOT/$TOKENS_CSS" ]; then
+	# normalise first (whitespace, rgba spelling, hex case), THEN split name
+	# from value on the first colon -- splitting first and squashing whitespace
+	# afterwards ate the separator (found the hard way).
+	norm() { sed -E 's|//.*$||; s/[[:space:]]+/ /g; s/rgba\(([0-9]+), ?([0-9]+), ?([0-9]+), ?0?\.([0-9]+)\)/rgba(\1,\2,\3,.\4)/g; s/ *$//' | tr 'A-F' 'a-f' | awk '{ i = index($0, ":"); if (i == 0) next; n = substr($0, 1, i - 1); v = substr($0, i + 1); gsub(/^ +| +$/, "", n); gsub(/^ +| +$/, "", v); print n "\t" v }'; }
+	DEFS="$(for d in $TOKDEFS; do [ -f "$ROOT/$d" ] && grep -oE -- '--[A-Za-z0-9_-]+ *: *[^;{}]+' "$ROOT/$d"; done | norm | sort)"
+	MIR="$(tr ';' '\n' < "$ROOT/$TOKENS_CSS" | grep -oE -- '--[A-Za-z0-9_-]+ *: *[^;{}]+' | norm | sort)"
+	printf '%s\n' "$MIR" | cut -f1 | sort -u | while read -r n; do
+		[ -n "$n" ] || continue
+		case "$n" in --ui-scale|--title-bar-height|--key-bar-height|--mobile-nav-height|--content-height|--safe-area-top) continue ;; esac
+		printf '%s\n' "$DEFS" | cut -f1 | grep -qx -- "$n" || echo "Token nur im Spiegel, nicht im Produktivcode: $n | $TOKENS_CSS | important"
+	done > "${TMPDIR:-/tmp}/mb-tok.$$"
+	printf '%s\n' "$DEFS" | cut -f1 | sort | uniq -c | awk '$1==1{print $2}' | while read -r n; do
+		dv="$(printf '%s\n' "$DEFS" | awk -F'\t' -v n="$n" '$1==n{print $2; exit}')"
+		mv_="$(printf '%s\n' "$MIR" | awk -F'\t' -v n="$n" '$1==n{print $2; exit}')"
+		[ -z "$mv_" ] && { echo "Token im Produktivcode, fehlt im Spiegel: $n | $TOKENS_CSS | important"; continue; }
+		[ "$dv" = "$mv_" ] || echo "Token-Wert weicht ab: $n (Code: $dv / Spiegel: $mv_) | $TOKENS_CSS | important"
+	done >> "${TMPDIR:-/tmp}/mb-tok.$$"
+	if [ -s "${TMPDIR:-/tmp}/mb-tok.$$" ]; then cat "${TMPDIR:-/tmp}/mb-tok.$$"; findings=$((findings + $(wc -l < "${TMPDIR:-/tmp}/mb-tok.$$"))); fi
+	rm -f "${TMPDIR:-/tmp}/mb-tok.$$"
+fi
+
 # 2. Every spec with a block: freshness and the always-present facts.
 for spec in "$ROOT"/docs/superpowers/specs/*-design.md; do
 	[ -f "$spec" ] || continue
