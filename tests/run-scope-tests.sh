@@ -97,7 +97,8 @@ check "raw value with exactly one token -> token named" "1" "$("$SCOPE" --tokens
 check "value shared by two tokens -> ambiguous" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'match.css:1:ambiguous:--white|--text:')"
 check "3-digit token hex expands to match a 6-digit raw value" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'match.css:2:--short:')"
 check "sass \$variable definitions count as tokens (case-insensitive)" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'match.css:3:$primary:')"
-check "inline style value resolves to a sass-defined custom property" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'Inline.tsx:1:--sassy:')"
+printf 'export const C = () => <i style={{ color: "#123456" }}>y</i>;\n' > "$PROJ/client/Inline2.tsx"   # inside source_roots
+check "inline style value resolves to a sass-defined custom property" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'client/Inline2.tsx:1:--sassy:')"
 check "raw value with no token -> -" "1" "$("$SCOPE" --tokens --root "$PROJ" | grep -cF 'match.css:4:-:')"
 check "var(--x, #hex) fallback is a token, not a raw value" "0" "$("$SCOPE" --tokens --root "$PROJ" | grep -c \'fallback.sass\')"
 check "--locate under source_roots ignores files outside" "0" "$("$SCOPE" --locate UI-SHELL-NAV --root "$PROJ" | grep -c 'src/Nav.tsx')"
