@@ -62,6 +62,28 @@ F="$SANDBOX/withcomment.yaml"
 { cat "$VALID"; printf '\n# just a trailing comment\n'; } > "$F"
 check_rc "trailing comment does not error" 0 mb_manifest_to_tsv "$F" >/dev/null
 
+echo "== block scalars (> and |) are folded into one line =="
+BS="$SANDBOX/blockscalar.yaml"
+python3 - "$VALID" "$BS" <<'PYX'
+import sys, io
+s = io.open(sys.argv[1], encoding="utf-8").read()
+s = s.replace("          means: Eine Zeile je Bestellung mit Status ungleich versendet.",
+"""          means: >
+            Eine Zeile je Bestellung mit Status ungleich versendet,
+            aufsteigend nach Lieferdatum sortiert.""")
+s = s.replace("        label: Leerzustand der Bestellliste",
+"""        label: |
+            Leerzustand der
+            Bestellliste""")
+io.open(sys.argv[2], "w", encoding="utf-8").write(s)
+PYX
+check_rc "manifest with block scalars parses" 0 mb_manifest_to_tsv "$BS" >/dev/null
+BROW="$(mb_manifest_to_tsv "$BS" | grep -F 'UI-ORDERS-TABLE')"
+check "folded > scalar is one line, joined by spaces" "Eine Zeile je Bestellung mit Status ungleich versendet, aufsteigend nach Lieferdatum sortiert." "$(mb_tsv_field "$BROW" "$MB_F_SEMANTIC_MEANS")"
+check "folded | scalar too" "Leerzustand der Bestellliste" "$(mb_manifest_to_tsv "$BS" | grep -F 'UI-ORDERS-EMPTY' | cut -f"$MB_F_ELEMENT_LABEL")"
+check "the block does not swallow the next key" "empty" "$(mb_manifest_to_tsv "$BS" | grep -F 'UI-ORDERS-EMPTY' | cut -f"$MB_F_ELEMENT_TYPE")"
+check "element count unchanged by folding" "4" "$(mb_manifest_to_tsv "$BS" | wc -l | tr -d ' ')"
+
 echo "== mb_manifest_meta =="
 META="$(mb_manifest_meta "$VALID")"
 check "schema" "mockingbird/1" "$(printf '%s\n' "$META" | awk -F'\t' '$1=="schema"{print $2}')"

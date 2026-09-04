@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-09-04
+
+### Added
+
+- The manifest parser folds YAML block scalars (`>`, `|`) into one line. The one-line-only subset refused every anchor text longer than a line — which is most good anchor texts; found writing Outpost's own manifest. 430 checks.
+
 ## [0.1.4] - 2026-09-04
 
 ### Added

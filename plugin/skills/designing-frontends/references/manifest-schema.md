@@ -134,8 +134,10 @@ jede Prüfung danach vergiften. Halte dich deshalb exakt an diese Form:
   im Block-Stil über mehrere Zeilen.
 - **Listen inline:** `aliases: [dept, orgUnit]`, `not: [team, group]`,
   `uses: [UI-SHELL-NAV]`, `owns: [UI-ORDERS]`.
-- **Keine mehrzeiligen Skalare** (`|`, `>`), **keine Anker/Aliase** (`&`,
-  `*`), **keine gequoteten Schlüssel**. Kommas in Werten sind erlaubt, wenn
+- **Blockskalare `>` und `|` sind erlaubt** und werden zu einer Zeile
+  gefaltet (Folgezeilen tiefer eingerückt als der Schlüssel) — ein
+  `means`-Text über mehrere Zeilen ist der Normalfall. **Keine Anker/Aliase**
+  (`&`, `*`), **keine gequoteten Schlüssel**. Kommas in Werten sind erlaubt, wenn
   der Wert in `"…"` steht.
 - `semantic_anchor:` ist eine verschachtelte Map (Kinder je eine Zeile),
   `locators:` ebenso (`web: "[data-ui-id='…']"`).

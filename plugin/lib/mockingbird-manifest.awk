@@ -118,9 +118,40 @@ BEGIN {
 	reset_elem(); reset_screen(); reset_alloc()
 }
 
+function indent_of(s,   n) { n = 0; while (substr(s, n + 1, 1) == " ") n++; return n }
+
+function flush_block(   folded) {
+	folded = block_key " " block_buf
+	block_mode = 0; block_buf = ""; block_key = ""
+	redo = 1
+	while (redo) { redo = 0; dispatch(folded) }
+}
+
+# YAML block scalars ("means: >" / "copy: |", with optional chomping) are folded
+# into a single line before the state machine sees them. A one-line-only subset
+# refused every anchor text longer than a line -- which is most good anchor
+# texts (found writing Outpost's manifest, 2026-09-04). Folding, not preserving
+# newlines: the TSV normal form is one line per element either way.
 {
 	line = $0
 	sub(/\r$/, "", line)
+
+	if (block_mode) {
+		if (line ~ /^[ \t]*$/) next
+		if (indent_of(line) > block_indent) { block_buf = block_buf (block_buf == "" ? "" : " ") trim(line); next }
+		flush_block()
+	}
+
+	if (line ~ /:[ \t]*[>|][-+]?[ \t]*$/) {
+		block_mode = 1
+		block_indent = indent_of(line)
+		block_key = line
+		sub(/[ \t]*[>|][-+]?[ \t]*$/, ":", block_key)
+		sub(/:[ \t]*:$/, ":", block_key)
+		block_buf = ""
+		next
+	}
+
 	redo = 1
 	while (redo) {
 		redo = 0
@@ -331,6 +362,7 @@ function dispatch(l,    key, val, rest) {
 }
 
 END {
+	if (block_mode) flush_block()
 	emit_elem()
 	emit_alloc()
 	if (errors > 0) exit 5

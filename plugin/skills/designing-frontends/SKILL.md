@@ -101,7 +101,7 @@ Live-Dialog).
 
 `docs/design/manifest.yaml` gemäß `references/manifest-schema.md` füllen —
 **in der dort unter „Schreibform" festgelegten Form** (Flow-Style-States,
-Inline-Listen, keine mehrzeiligen Skalare): der Parser verweigert alles
+Inline-Listen; Blockskalare `>`/`|` sind erlaubt): der Parser verweigert alles
 andere mit Exit 5. Nach dem Schreiben sofort
 `${CLAUDE_PLUGIN_ROOT}/scripts/mockingbird-scope.sh --validate --root <projekt>`
 laufen lassen und Fehler beheben, bevor es weitergeht.
