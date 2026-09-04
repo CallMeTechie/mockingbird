@@ -69,3 +69,43 @@ One skill-ordering defect found by following it: the artboard writer needs
 the manifest slice, but the manifest was Phase 5 — the manifest draft now
 precedes the artboards. One writer defect: it invented split-view colours
 where the spec names none; marked as placeholders.
+
+## 2026-09-04 — first real `/design-verify` run (Outpost, `UI-SERVERS`)
+
+First run with the plugin's own `mockingbird:reviewer` agents (plugin loaded
+after a session restart), against the existing Outpost code, nine elements,
+five stages in parallel. `--check-seam` downgraded nothing; every semantic and
+flow claim carried an existing terminal link, sampled by hand.
+
+Verdict `MISMATCH` — three blockers, four important:
+
+| element | structure | semantic | flow | states | tokens |
+|---|---|---|---|---|---|
+| UI-SERVERS-LIST | ok | ok | – | partial | ok |
+| UI-SERVERS-SEARCH | partial | – | – | partial | ok |
+| UI-SERVERS-LIST-MENU | partial | – | ok | partial | violated |
+| UI-SERVERS-TABS | ok | ok | ok | ok | ok |
+| UI-SERVERS-VIEW | partial | ok | – | ok | violated |
+| UI-SERVERS-FOCUS | no-locator | – | partial | ok | ok |
+| UI-SERVERS-KEYBAR | partial | – | – | partial | ok |
+| UI-SERVERS-ACTIONS | partial | – | violated | partial | ok |
+| UI-SERVERS-WELCOME | partial | ok | – | ok | ok |
+
+Reading: the **semantic** stage — the plugin's reason to exist — passed on all
+four data-bearing elements with real chains into `server/` (tabs resolve to
+`SessionManager`, the list to `models/Entry`, recent connections to the audit
+log), and it correctly told sessions apart from server entries. The blockers
+are of a different kind: `structure` cannot do better than `partial` on code
+that carries no `data-ui-id` markers yet (tier-C locators everywhere), the
+designed focus mode does not exist as designed (a pane `fullscreenMode` on
+F11 exists instead — flow `partial`), and the actions menu holds a different
+set of actions than the manifest promises (flow `violated`).
+
+Plugin defects found by this run, both fixed the same day: `--coverage` had
+no `--screen`, so the three dialog screens that were never in scope counted
+as "no coverage entry" blockers; and two reviewers answered with absolute
+paths, which seam rule 2 would have rejected as "outside the root".
+
+Format deviations observed: the states reviewer appended a fifth
+explanatory column (parsers ignore it — useful, kept), two reviewers used
+absolute paths (now tolerated).

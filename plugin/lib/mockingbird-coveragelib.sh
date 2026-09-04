@@ -56,8 +56,12 @@ _mb_locator_exists() {
 	local loc="$1" root="$2" file
 	[ -n "$loc" ] && [ "$loc" != "-" ] || return 1
 	file="${loc%:*}"
+	# Reviewers sometimes answer with the absolute path (seen on the first real
+	# run). Under the root that is the same evidence, so accept it; outside the
+	# root it stays a rejection.
+	case "$file" in "$root"/*) file="${file#"$root"/}" ;; esac
 	case "$file" in
-		/*) return 1 ;;                        # absolute paths never legitimate here
+		/*) return 1 ;;                        # absolute paths outside the root
 		*node_modules*) return 1 ;;
 		../*|*/../*) return 1 ;;                # no escaping the project root
 	esac
