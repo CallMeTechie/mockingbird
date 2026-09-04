@@ -64,7 +64,12 @@ Gibt `<arbeitsverzeichnis><TAB><befehl><TAB>whole|files` je Zeile aus
 Freispruch, sondern „nicht prüfbar"). Die dritte Spalte entscheidet, wie
 ausgeführt wird:
 
-- **`files`** — die soeben geänderten Pfade anhängen. Ein projektweiter Lint
+- **`files`** — die soeben geänderten Pfade anhängen, **absolut**. Die Zeile
+  nennt ein Arbeitsverzeichnis, und ein repo-relativer Pfad zeigt von dort aus
+  ins Leere; das Werkzeug meldet dann „nicht gefunden" statt zu prüfen. Dass ein
+  Befehl Pfade außerhalb seines Bereichs als *ignoriert* verwarnt, ist normal
+  und kein Fehlschlag — genau deshalb werden bei mehreren `files`-Zeilen alle
+  ausgeführt: zusammen decken sie den Baum ab, einzeln keiner. Ein projektweiter Lint
   auf einem Bestandsprojekt ist rot, bevor mockingbird irgendetwas anfasst
   (Outpost: 80 vorhandene Fehler); als Tor sagt er dann nichts aus. Gemessen
   wird, was dieser Lauf geschrieben hat.
