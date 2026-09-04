@@ -23,8 +23,15 @@ Elemente, Zustände oder Inhalte, die dir nicht mitgegeben wurden.
 - Inhalte kommen aus `semantic_anchor.example` bzw. `states[].copy` im
   Manifest-Ausschnitt, wörtlich. Nie Lorem Ipsum, nie erfundene Beispieldaten
   für ein Element, das keine hat.
-- Aktualisiere `docs/design/mockups/index.html` um einen Eintrag für diesen
-  Screen, falls er dort noch fehlt — füge nur hinzu, entferne nichts.
+- Beginne den `<body>` mit dem Kontextblock `<header class="mb-context">`
+  aus dem Manifest (Art, erscheint über, Auslöser, Größe, Schließen,
+  Tastatur — siehe `artboard-conventions.md`, Abschnitt Darstellungskontext).
+  Ein Dialog, dem man nicht ansieht, dass er ein Dialog ist, ist unvollständig.
+- Halte das CSS flach (ein `<style>`, keine `body`/`html`/`:root`-Regeln für
+  Layout, alles in einem `<main class="mb-artboard">`), damit der
+  Kontaktbogen den Auszug einbetten kann.
+- Fasse `docs/design/mockups/index.html` **nicht** an — den Kontaktbogen
+  erzeugt `scripts/mb-render-index.sh` aus Manifest und Artboards.
 
 Antworte nach dem Schreiben mit einer Zeile: welche Datei geschrieben wurde,
 wie viele Elemente und Zustände sie enthält.

@@ -74,12 +74,28 @@ im Chat zur Genehmigung zeigen, bevor Artboards davon abhängen.
 
 ### Phase 4 — Artboards
 
-Je Screen `docs/design/mockups/<slug>.html`, plus `index.html` als
-Kontaktbogen (alle Screens nebeneinander). Konventionen — Locator-Attribute,
+**Zuerst den Manifest-Entwurf schreiben** (Phase 5 vorziehen, noch ohne
+Freigabe der Anker): der Artboard-Writer braucht Elemente, Zustände und
+Beispielwerte als Manifest-Ausschnitt, und `--validate` fängt Subset-Fehler,
+bevor vier Artboards darauf aufbauen. Erst dann je Screen
+`docs/design/mockups/<slug>.html`, plus `index.html` als Kontaktbogen (alle
+Screens nebeneinander) — den Kontaktbogen schreibt der Main-Thread, nicht die
+parallelen Writer, sonst überschreiben sie sich gegenseitig.
+(Reihenfolge korrigiert nach dem ersten Live-Dialog am 2026-09-03.) Konventionen — Locator-Attribute,
 Zustands-Rendering, realistische Inhalte statt Lorem Ipsum, kein Build, kein
 CDN — in `references/artboard-conventions.md`. Mechanisch und
 tokenintensiv: an `mockingbird:artboard-writer` delegieren (siehe unten).
 Der Dialog selbst bleibt im Main-Thread.
+
+### Phase 4b — Kontaktbogen
+
+`${CLAUDE_PLUGIN_ROOT}/scripts/mb-render-index.sh --root <projekt>` erzeugt
+`docs/design/mockups/index.html`: je Screen Art und Darstellungskontext,
+Zweck, Elementtabelle mit fachlichen Ankern, Zustände, Link zum Artboard
+und zur Umsetzungsanleitung — und darunter das Artboard selbst als
+eingebetteter, stil-gekapselter Auszug. Keine `<iframe>`s: die sind über
+`file://` oft leer und erklären nichts (Rückmeldung aus dem ersten
+Live-Dialog).
 
 ### Phase 5 — Manifest
 
@@ -106,6 +122,17 @@ exakt so, wie `carrying-design-through` sie in die Spec rendern würde —
 nichts, es gibt den Block nur auf stdout aus, ist also selbst schon die
 Vorschau. Bei Zustimmung: `revision` erhöhen, `changelog`-Eintrag mit
 `touched`, Manifest final schreiben.
+
+### Phase 6b — Umsetzungsanleitungen
+
+Nach der Freigabe je Screen `docs/design/guides/<screen-slug>.md` schreiben,
+nach `references/implementation-guide-template.md`: explizite Anweisungen
+an die KI, wie dieses Mockup in Produktivcode übergeht — welche Datei,
+welche vorhandene Komponente, wo das `data-ui-id` hin muss, welche Zustände
+in welchem Branch, welche Tokens, was ausdrücklich nicht. Das ist das zweite
+Artefakt neben dem Artboard, das durch Spec, Plan und Task-Brief getragen
+wird (`carrying-design-through`, Kanal C nennt es je Task). Der Pfad steht
+im Manifest als `guide:` am Screen.
 
 ### Phase 7 — Übergabe
 

@@ -55,5 +55,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `allocations:` parsed so consumed elements and per-spec screens are derived
   instead of supplied; fence-aware fact reading in the hook; the parser's
   accepted subset spelled out in the schema document and the `/design` skill.
-- 371 automated checks across eleven suites; `tests/MANUAL-INTEGRATION.md` for
+- From the first live `/design` dialogue (Outpost, 2026-09-03/04): the contact
+  sheet is now generated (`mb-render-index.sh`) — summaries, anchors, states
+  and the artboard itself as a style-scoped inline excerpt, never an
+  `<iframe>` (blank over `file://`, explains nothing); every artboard opens
+  with a presentation-context header (kind, appears over, trigger, size,
+  dismiss, keyboard — a dialog that doesn't say it is a dialog is
+  incomplete); and the implementation guide `docs/design/guides/<screen>.md`
+  becomes a first-class artefact — explicit instructions to the AI on how a
+  mockup becomes production code — named in the manifest (`guide:`), carried
+  in Channel C, and checked by `mb-design-check.sh`.
+- 388 automated checks across twelve suites; `tests/MANUAL-INTEGRATION.md` for
   what is LLM-driven and therefore not automatable.

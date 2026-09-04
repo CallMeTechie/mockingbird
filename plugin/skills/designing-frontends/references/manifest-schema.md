@@ -54,6 +54,8 @@ resolve to an explanation, not to nothing.
 | `route_hint` | no | Free text, e.g. `/orders` |
 | `description` | no | One or two sentences |
 | `uses` | no | IDs of shared elements (usually from `UI-SHELL`) this screen uses but does not own |
+| `presentation` | required for dialog/panel/overlay-like screens | One-line flow map `{ over: <screen id>, trigger: "…", size: "…", dismiss: "…", keyboard: "…" }` — how the screen appears; rendered as the artboard's context header and in the contact sheet |
+| `guide` | recommended | Path to the implementation guide, by convention `docs/design/guides/<screen-slug>.md` |
 | `elements` | yes | List of element objects, see below |
 
 \* A screen may exist in the manifest with `artboard: null` while it is still

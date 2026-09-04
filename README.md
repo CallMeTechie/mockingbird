@@ -32,6 +32,7 @@ carries it all the way to the implementer — then checks the built result again
 
 ```
   /design            dialogue -> design-system.md + tokens.css + artboards + manifest.yaml
+                     + guides/<screen>.md (explicit build instructions) + index.html (contact sheet)
      |
   /design-spec       renders the design block into the spec  (preflight reads it as requirements)
      |
@@ -71,7 +72,7 @@ claude plugin install /path/to/mockingbird/plugin
 
 ## Status
 
-Built and tested, 371 automated checks across eleven suites: the plugin
+Built and tested, 388 automated checks across twelve suites: the plugin
 scaffold; the hook layer (path detection, two-hash drift state, session-aware
 locking); the design marker block (placement next to preflight's security
 block, idempotent rendering); the manifest parser and validator; propagation
@@ -97,7 +98,10 @@ docs/design/
   mockups/
     index.html         contact sheet: every artboard side by side
     tokens.css         one token file, linked by every artboard
-    <screen>.html      one artboard per screen, every state stacked and labelled
+    <screen>.html      one artboard per screen, every state stacked and labelled,
+                       opening with how/where the screen appears
+  guides/
+    <screen>.md        implementation guide: how this mockup becomes code, for the AI
 ```
 
 State lives under `<project>/.claude/` and never under the plugin directory.
@@ -108,7 +112,7 @@ State lives under `<project>/.claude/` and never under the plugin directory.
 Plain bash, no framework.
 
 ```
-tests/run-all.sh                    # everything (371 checks as of this writing)
+tests/run-all.sh                    # everything (388 checks as of this writing)
 tests/run-hook-tests.sh             # path detection, state, locking, end-to-end hook
 tests/run-block-tests.sh            # marker block: exit contract, fences, idempotent render
 tests/run-manifest-tests.sh         # strict-subset YAML parser, TSV normal form, validation
@@ -119,6 +123,7 @@ tests/run-coverage-tests.sh         # every seam rule and every coverage/verdict
 tests/run-scope-tests.sh            # the mockingbird-scope.sh CLI wiring
 tests/run-wellformed-tests.sh       # agent/command/skill frontmatter, no AskUserQuestion in agents
 tests/run-design-check-tests.sh     # the deterministic half of /design-check
+tests/run-index-tests.sh            # the contact-sheet generator: scoped CSS, no iframes
 tests/run-bench-tests.sh            # the bench SCORER (not a live LLM run — see below)
 ```
 

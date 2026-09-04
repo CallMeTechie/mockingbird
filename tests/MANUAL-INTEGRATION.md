@@ -14,6 +14,9 @@ selbst an.
 
 ## 1. Grüne Wiese
 
+*Stand 2026-09-04: einmal live gefahren (Outpost, per Hand nach SKILL.md) —
+Ergebnis und drei Rückmeldungen in `tests/bench/RESULTS.md`.*
+
 `/design` in einem leeren Repo aufrufen.
 
 **Erwartet:**

@@ -33,6 +33,16 @@ REV="$(mb_manifest_meta "$MANIFEST" | awk -F'\t' '$1=="revision"{print $2; exit}
 ALL_SCREENS="$(printf '%s\n' "$TSV" | cut -f1 | sort -u)"
 ALLOCS="$(mb_manifest_allocations "$MANIFEST")"
 
+# 1b. Every screen that names a guide must have it; a guide named nowhere is
+# fine (v0.1 keeps it recommended, not required).
+awk '/^  - id:/{cur=$0; sub(/^  - id:[ \t]*/,"",cur)} /^    guide:/{g=$0; sub(/^    guide:[ \t]*/,"",g); gsub(/^"|"$/,"",g); print cur "\t" g}' "$MANIFEST" \
+| while IFS=$'\t' read -r sid g; do
+	[ -n "$g" ] || continue
+	[ -f "$ROOT/$g" ] || echo "Umsetzungsanleitung fehlt: $g | $sid | important"
+done > "${TMPDIR:-/tmp}/mb-guides.$$"
+if [ -s "${TMPDIR:-/tmp}/mb-guides.$$" ]; then cat "${TMPDIR:-/tmp}/mb-guides.$$"; findings=$((findings + $(wc -l < "${TMPDIR:-/tmp}/mb-guides.$$"))); fi
+rm -f "${TMPDIR:-/tmp}/mb-guides.$$"
+
 # 2. Every spec with a block: freshness and the always-present facts.
 for spec in "$ROOT"/docs/superpowers/specs/*-design.md; do
 	[ -f "$spec" ] || continue

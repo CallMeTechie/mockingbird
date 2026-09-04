@@ -43,3 +43,29 @@ now says to take only the block between the marker and `END`.
 
 Not yet observed live: the real `mockingbird:reviewer` agent (vs. a stand-in),
 the fix path (`editor`, snapshot, diff), and the `/design` dialogue.
+
+## 2026-09-03/04 — first live `/design` dialogue (Outpost, Servers workspace)
+
+Run by following `designing-frontends/SKILL.md` by hand (the plugin was not
+yet loaded in the session). Produced `docs/design/` in `/root/outpost`: design
+system from the existing token set, four artboards, a 21-element manifest
+that validated on the first try (the schema's "Schreibform" section held),
+four implementation guides.
+
+Three findings from the user, all acted on:
+
+1. **Contact sheet in iframes was unusable** — blank over `file://`, and a
+   frame catalogue explains nothing. Replaced by a generator that writes
+   summaries per screen and embeds each artboard as a style-scoped excerpt.
+2. **Artboards did not say how they appear** — two were modals and nothing in
+   the mockup showed it. Every artboard now opens with a presentation-context
+   header from the manifest's new `presentation:` map.
+3. **No instructions for the AI on how to build from the mockup** — the
+   "Anleitung zur Erstellung" from the original brief was missing as an
+   artefact. Added `docs/design/guides/<screen>.md` per screen, named in the
+   manifest and in Channel C.
+
+One skill-ordering defect found by following it: the artboard writer needs
+the manifest slice, but the manifest was Phase 5 — the manifest draft now
+precedes the artboards. One writer defect: it invented split-view colours
+where the spec names none; marked as placeholders.
