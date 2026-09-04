@@ -145,12 +145,19 @@ _mb_check_seam_line() {
 #      never ok -- silence is never a pass
 #   7. verify:skip WITH a reason is excluded from the denominator entirely;
 #      WITHOUT a reason it is treated as required
+# Optional 4th argument: a screen id -- the denominator is then only that
+# screen's elements. Without it a --screen run counted every other screen's
+# elements as "no coverage entry" blockers (found on the first real run).
 mb_manifest_coverage() {
-	local coveragefile="$1" manifestfile="$2" root="${3:-}"
+	local coveragefile="$1" manifestfile="$2" root="${3:-}" screen="${4:-}"
 	[ -f "$coveragefile" ] || return 3
 	local tsv
 	tsv="$(mb_manifest_to_tsv "$manifestfile")"; local rc=$?
 	[ "$rc" -eq 0 ] || return "$rc"
+	if [ -n "$screen" ]; then
+		tsv="$(printf '%s\n' "$tsv" | awk -F'\t' -v s="$screen" '$1==s')"
+		[ -n "$tsv" ] || { echo "no such screen in manifest: $screen" >&2; return 3; }
+	fi
 
 	local blockers="" importants="" gaps=""
 	local mismatch=0

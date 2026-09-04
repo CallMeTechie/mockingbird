@@ -155,6 +155,15 @@ mb_manifest_coverage "$SANDBOX/cov.txt" "$MAN" "$SANDBOX" > "$SANDBOX/rep.txt"; 
 check "all required elements ok, skip excluded -> MATCH" "0" "$RC"
 check "MATCH verdict line" "1" "$(grep -c '^VERDICT: MATCH$' "$SANDBOX/rep.txt")"
 
+echo "-- screen scoping: other screens' elements are not in the denominator --"
+printf 'UI-SHELL-NAV | structure | ok | -\n' > "$SANDBOX/cov.txt"
+mb_manifest_coverage "$SANDBOX/cov.txt" "$MAN" "$SANDBOX" UI-SHELL > "$SANDBOX/rep.txt"; RC=$?
+check "only UI-SHELL in scope, its one element ok -> MATCH" "0" "$RC"
+check "UI-ORDERS elements not reported as missing" "0" "$(grep -c 'UI-ORDERS' "$SANDBOX/rep.txt")"
+mb_manifest_coverage "$SANDBOX/cov.txt" "$MAN" "$SANDBOX" > /dev/null; RC=$?
+check "without scoping the same file is a MISMATCH" "1" "$RC"
+check_rc "unknown screen -> 3" 3 mb_manifest_coverage "$SANDBOX/cov.txt" "$MAN" "$SANDBOX" UI-NOPE
+
 check_rc "missing coverage file -> 3" 3 mb_manifest_coverage "$SANDBOX/nope.txt" "$MAN" "$SANDBOX"
 check_rc "missing manifest -> propagates 3" 3 mb_manifest_coverage "$SANDBOX/cov.txt" "$SANDBOX/nope.yaml" "$SANDBOX"
 

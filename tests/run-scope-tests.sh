@@ -125,6 +125,8 @@ printf 'UI-ORDERS-TABLE | structure | ok | -\nUI-ORDERS-EMPTY | structure | ok |
 check_rc "fully covered -> exit 0 (MATCH)" 0 "$SCOPE" --coverage "$SANDBOX/cov.txt" --root "$PROJ"
 : > "$SANDBOX/cov-empty.txt"
 check_rc "nothing covered -> exit 1 (MISMATCH)" 1 "$SCOPE" --coverage "$SANDBOX/cov-empty.txt" --root "$PROJ"
+printf 'UI-SHELL-NAV | structure | ok | -\n' > "$SANDBOX/cov-shell.txt"
+check_rc "--coverage --screen scopes the denominator (0)" 0 "$SCOPE" --coverage "$SANDBOX/cov-shell.txt" --root "$PROJ" --screen UI-SHELL
 check_rc "missing manifest -> 3" 3 "$SCOPE" --coverage "$SANDBOX/cov.txt" --root "$SANDBOX/nowhere"
 
 echo "== --self-test =="

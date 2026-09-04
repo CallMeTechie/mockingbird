@@ -21,7 +21,7 @@
 #                                   an MB-SEAM block, downgrading as required
 #   --seam-to-coverage FILE --stage semantic|flow
 #                                  turn a checked MB-SEAM block into MB-COVERAGE lines
-#   --coverage FILE                MB-COVERAGE bookkeeping + verdict
+#   --coverage FILE [--screen ID]  MB-COVERAGE bookkeeping + verdict (denominator: one screen if given)
 #   --fix-scope                    adapter globs, as an editor allowlist
 #   --self-test                    built-in assertions, no LLM, no fixtures
 #
@@ -262,7 +262,7 @@ case "$MODE" in
 	--coverage)
 		[ -n "$COVERAGE_FILE" ] || usage
 		[ -f "$MANIFEST" ] || exit 3
-		mb_manifest_coverage "$COVERAGE_FILE" "$MANIFEST" "$ROOT"
+		mb_manifest_coverage "$COVERAGE_FILE" "$MANIFEST" "$ROOT" "$SCREEN"
 		;;
 
 	--self-test)
