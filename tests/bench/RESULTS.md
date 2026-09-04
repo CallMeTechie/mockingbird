@@ -178,3 +178,76 @@ Compilation was checked against the *before* state, not just after: the seven
 stylesheets fail to compile with plain sass either way, because they import
 through Vite's `@` alias; with that alias supplied, 7/7 compile and 7/7 carry
 `var(--font-mono|sans)` in the output.
+
+## 2026-09-04 — first screen taken to MATCH (Outpost, `UI-SERVERS`)
+
+The last blocker from the previous run was `UI-SERVERS-FOCUS`: declared in the
+manifest, not built. This run built it from the guide and re-verified the whole
+screen — five stages, nine elements.
+
+| | |
+| - | - |
+| verdict | **MATCH WITH NOTES** (exit 0) |
+| blockers | 0 (was 1) |
+| important | 2, both on `verify: recommended` elements |
+| stages green | structure, semantic, flow on every `required` element |
+| seam check | no downgrades in either semantic or flow — every cited link held |
+
+Three reviewer rounds were needed on the one element, and each round found
+something the previous one had not:
+
+**Round 1, `structure` said `partial`:** the toggle sat left of the tab strip,
+the mockup and the guide put it right. The reviewer was right and named the
+cause precisely (`.layout-controls` is the first child of `.server-tabs`, which
+is a plain `display: flex` with no `order`). Fixed by moving the controls after
+the tab strip, which also moves the actions menu — so its dropdown had to be
+re-anchored right or it would leave the viewport.
+
+**Round 1, `flow` said `violated`** with a terminal that existed, so
+`--check-seam` passed it. The finding was thinly argued and I over-corrected:
+I searched for the ancestor as text, found `.server-page` containing both
+components, and declared the reviewer refuted.
+
+**Round 2, `flow` said `violated` again**, and this time proved it: `ServerList`
+is mounted with `createPortal` into `#left-pane-slot`, which lives in
+`.left-pane` — a sibling subtree of the `.main-content` holding `.server-page`.
+A portal does not move the real DOM, so the `:has()` selector could never match.
+My structural "proof" had read the JSX and missed the portal. The pre-existing
+fullscreen rule has the same defect; fullscreen only appears to work because the
+fixed, z-indexed view covers the list. Fixed by hanging the rule off the body
+marker the code already sets.
+
+**Round 3: `ok`.** Then the full five-stage fan-out over all nine elements.
+
+### What the run cost the plugin
+
+Two limits, both fixed the same day (0.1.9):
+
+1. **Nothing checked that the code runs.** The toggle called `t(...)` in a
+   component that never took the `useTranslation` hook — a `ReferenceError` on
+   render. `structure` passed it, `flow` passed it, the seam check passed it:
+   all five stages read code as text. Fixed with a fifth adapter function and
+   `--healthcheck`. It caught the error immediately when run.
+2. **A repo-wide lint is useless as a gate.** The first `--healthcheck` run on
+   Outpost returned 80 pre-existing errors that had nothing to do with this
+   work. Fixed with a `whole|files` column: lint names the tool directly and
+   the caller appends the paths this run changed. Scoped that way, lint passes
+   and says something.
+
+Also hardened: `flow` and `semantic` now require that a cited rule can take
+effect at all — parent selector, real rendered class, real ancestor, portal
+boundaries, and the built artefact as the cheapest proof. A dead rule is the
+most dangerous evidence there is: it survives the seam check because its
+`file:line` exists. Both failure directions showed up in this one run.
+
+### Reviewer quality, unprompted
+
+`tokens` cleared three raw-value clusters with reasons rather than flagging
+them: a rainbow gradient that is the affordance for a colour picker, a tag
+palette that is user data rather than chrome, and the terminal palette that
+`_tokens.sass` explicitly excludes. `semantic` traced six chains into the
+server controllers and read `filter(!isHibernated)` and the `activeSessionId`
+narrowing as legitimate — the decoy class the bench was built for, on real
+code. `states` found a swallowed load error (`catch {}`) and a search with no
+empty state. Both `partial` verdicts asked "which side is wrong?" instead of
+deciding, which is what the mandate demands.
