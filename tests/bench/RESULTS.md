@@ -308,3 +308,64 @@ Building the fix produced one more finding for the project, not the plugin:
 is `var(--primary)`. That compiles to `rgba(var(--primary), 0.7)`, which is not
 valid CSS — the browser drops the declaration. Three lines. Reported, not fixed:
 which token replaces it is a design call.
+
+## 2026-09-04 — rebuilding two dialogs against the manifest (Outpost)
+
+The user ruled that the manifest was right and asked for the blockers to be
+built. Four of five are gone.
+
+| screen | before | after |
+| - | - | - |
+| `UI-TMUX-DIALOG` | MISMATCH, 4 blockers | **MATCH** |
+| `UI-DIRECT-CONNECT` | MISMATCH, 1 blocker | MISMATCH, same blocker, now named |
+
+The tmux picker went from connect-on-click to select-then-attach with two panes,
+a selected state on both lists and a disabled Attach button. All four elements
+are tier A and green on structure, semantic and flow.
+
+### Three findings the reviewers made against my own work
+
+1. **A prop state.** I built `loading` on the connect button with
+   `setConnecting(true)` and `onClose()` in the same handler. React unmounts the
+   dialog in the same commit, so the state could never be seen. The reviewer
+   proved it from the code path and called it `violated` rather than `ok` —
+   exactly the judgement the stage exists for. Fixed by having the connection
+   report back.
+2. **The fix was still wrong, one layer down.** With the result plumbed through,
+   the error branch fired — but `POST /connections` answers 201 with a session id
+   *before* the SSH login is attempted. A rejected login reaches the session tab,
+   never the dialog. What the branch actually catches is 403/400/500, and it was
+   labelling those "Anmeldung abgelehnt." The reviewer found this on the second
+   pass, in the server controller, and asked which side was wrong instead of
+   deciding. The copy now shows the real server message; the manifest conflict is
+   reported.
+3. **An invented requirement in my own guide.** `UI-TMUX-DIALOG-NEW` came back
+   `partial` because the guide demanded a default session name from the server
+   settings. No such setting exists, and the manifest anchor never asked for it —
+   the guide did, because I wrote it that way. Same class as the key bar's
+   768 px and the actions-menu anchor: three times now a guide has been stricter
+   than the manifest because it was drafted from plausibility rather than from
+   the code. The phase-2 inventory in `/design` is where that has to be caught.
+
+### What the run cost the plugin
+
+`--healthcheck` measures the whole file, not the diff. A single added marker
+pulled a pre-existing dead `refreshIdentities` into the report, and for a moment
+it looked like new damage. The rule is now in `fix-policy.md`: write the `HEAD`
+copy to a temp path, run the same command on it, and if the finding is there
+too, report it as pre-existing rather than repairing someone else's file under
+cover of an unrelated change. Applied here — baseline and current output were
+byte-identical.
+
+### The one blocker left, and why it stayed
+
+`UI-DIRECT-CONNECT-HOST` describes a one-off connection to a freely entered
+host. The dialog has no host field because the entire connection path is
+anchored on an entry id: `entryId` is `Joi.number().required()`, `createSession`
+does `Entry.findByPk` and 404s without it, permissions come from
+`getRequiredConnectPermission(entry, ...)`, the audit record is written against
+`entry.organizationId`, and `ConnectionService` loads the entry again to learn
+host, port and protocol. A free target is an architecture change across four
+layers that also decides who may reach a host without an entry standing between
+them. That is a policy question, so it went back to the user rather than being
+built quietly.
