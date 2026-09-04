@@ -39,7 +39,7 @@ printf 'export const N = () => <ContextMenu dataUiId={"UI-ORDERS-MENU2"} />;\n' 
 check "camelCase prop dataUiId counts as tier A" "1" "$(MB_ADAPTER_ROOT="$SANDBOX" mb_adapter_locate UI-ORDERS-MENU "" | grep -c '^A	src/Menu.tsx:1$')"
 check "dataUiId in braces counts too" "1" "$(MB_ADAPTER_ROOT="$SANDBOX" mb_adapter_locate UI-ORDERS-MENU2 "" | grep -c '^A	src/Menu2.tsx:1$')"
 printf 'const other = "UI-ORDERS-MENU";\n' > "$SANDBOX/src/NotAMarker.tsx"
-check "a bare string that is not a marker is not tier A" "0" "$(MB_ADAPTER_ROOT="$SANDBOX" mb_adapter_locate UI-ORDERS-MENU "" | grep -c 'NotAMarker')"
+check "a bare string that is not a marker is not tier A" "0" "$(MB_ADAPTER_ROOT="$SANDBOX" mb_adapter_locate UI-ORDERS-MENU "" | grep -c '^A.*NotAMarker')"
 check "tier B (label match) present" "1" "$(printf '%s\n' "$OUT" | grep -c '^B	')"
 check "node_modules excluded from locate" "0" "$(printf '%s\n' "$OUT" | grep -c 'node_modules')"
 check_rc "no candidate anywhere -> exit 3" 3 bash -c '. "$1/plugin/scripts/adapters/web.sh"; MB_ADAPTER_ROOT="$2" mb_adapter_locate UI-NOWHERE ""' _ "$ROOT" "$SANDBOX/does-not-exist"
