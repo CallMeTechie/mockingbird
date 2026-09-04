@@ -431,3 +431,54 @@ first attempt had the root supersede them, which silently stopped linting the
 whole client while still reporting PASS, because Outpost's root eslint config
 matches `server/` and `scripts/` only. Caught within the same run by looking at
 what the command actually covered rather than at its exit code.
+
+## 2026-09-04 — building the declared states, and three review rounds on them
+
+The user asked for every mockup to be implemented before anything reaches the
+production container. The design system turned out to be a *record of the
+existing state* — its own first sentence says so, and its colour, spacing and
+radius sections are each marked "(Bestand)". There was no visual redesign
+waiting to be built. What was genuinely missing were the **states** the manifest
+declares per element.
+
+Building them took three review rounds, and every round found real defects in
+work I had just done.
+
+| round | what the reviewer found |
+| - | - |
+| 1 | `error` on the server list was unreachable: bound to `loadServers`, but the list is filled by the state stream. Skeletons would have run forever. And the details tab showed a red error on a 403 that every non-admin gets — a permanent failure message on a healthy form |
+| 2 | `disabled` on the key bar was bound to a **ref**, which schedules no re-render; the state was entered and never left by its own condition. The ref is also written when the socket is *constructed*, not when it opens, so the window the anchor describes was never covered. The offline notice fired on *any* engine being down |
+| 3 | the key bar's second connect window: the terminal effect re-runs on every preference change and its cleanup silences `onclose` before closing, so the state was never released. And `DetailsPage` had no marker at all — a bare fragment, tier B/C only |
+
+Round 3 also cleared the save button: all three states present, reachable, on
+the right cause, traced into the built stylesheet.
+
+### The pattern, and it is mine
+
+Five findings across two elements, all the same shape: **a condition that looks
+right and does not measure what it claims.** A selector that cannot match across
+a portal boundary, a `:has()` whose ancestor is in another subtree, a ref where
+a state was needed, a ref written at the wrong moment, a filter over every
+engine instead of this server's. Each time I wrote the condition from what
+sounded correct rather than tracing what it meets at runtime.
+
+The reviewers' value was not in finding *bugs* — it was in refusing to accept a
+branch as implemented until they had followed it to the point where it becomes
+visible. Round 2's finding required knowing that a ref write does not re-render;
+round 3's required reading a cleanup function four hundred lines from the state
+it affects.
+
+Two things I now do without being asked: enumerate every site of a crosscutting
+assumption before fixing the first one, and check what a command actually covers
+rather than trusting its exit code. Both came out of this project. Neither is in
+the plugin's own rules, because they are about how the *operator* works, not
+about what the chain checks.
+
+### Side effects worth recording
+
+- A crash the review found in passing: typing in the search box while the list
+  was loading reached `flattenEntries(null)`. Pre-existing, but the new visible
+  loading state makes it far easier to hit.
+- `display: contents` is the answer to "this element needs a marker but a
+  wrapper would break the layout". The div carries the attribute and leaves the
+  flex container untouched. Verified in the built CSS, not assumed.
