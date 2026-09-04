@@ -12,7 +12,22 @@ PLUGIN_ROOT="$(dirname -- "$HERE")"
 . "$PLUGIN_ROOT/lib/mockingbird-blocklib.sh"
 . "$PLUGIN_ROOT/hooks/mockingbird-hooklib.sh"
 
-ROOT="${1:-.}"
+# Accept --root DIR like every other command does (0.1.4), and a bare
+# positional path for the older call sites. Without this, "--root /x" was taken
+# as the project path itself and the run died with "kein Manifest unter
+# --root/docs/design/manifest.yaml" -- which reads like a broken project rather
+# than a mis-parsed call.
+ROOT="."
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--root)
+			[ $# -ge 2 ] || { echo "--root braucht ein Verzeichnis" >&2; exit 2; }
+			ROOT="$2"; shift 2 ;;
+		--root=*) ROOT="${1#--root=}"; shift ;;
+		-*) echo "unbekannte Option: $1" >&2; exit 2 ;;
+		*) ROOT="$1"; shift ;;
+	esac
+done
 MANIFEST="$ROOT/docs/design/manifest.yaml"
 [ -f "$MANIFEST" ] || { echo "kein Manifest unter $MANIFEST" >&2; exit 3; }
 

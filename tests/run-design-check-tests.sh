@@ -92,4 +92,14 @@ OUT="$("$CHECK" "$P")"
 check "tracked run state is reported" "1" "$(printf '%s\n' "$OUT" | grep -c 'Laufzustand wird versioniert')"
 git -C "$P" rm -q --cached .claude/.mockingbird-verified >/dev/null 2>&1
 
+echo "== --root, like every other command =="
+# Without this the flag was swallowed as the project path itself and the run
+# died with "kein Manifest unter --root/docs/design/manifest.yaml", which reads
+# like a broken project rather than a mis-parsed call.
+check "--root DIR is accepted" "$("$CHECK" "$P" 2>&1)" "$("$CHECK" --root "$P" 2>&1)"
+check "--root=DIR is accepted" "$("$CHECK" "$P" 2>&1)" "$("$CHECK" --root="$P" 2>&1)"
+check_rc "--root without a directory -> usage (2)" 2 "$CHECK" --root
+check_rc "an unknown option is refused, not treated as a path" 2 "$CHECK" --nope
+check_rc "a missing project still exits 3" 3 "$CHECK" --root "$SANDBOX/nowhere"
+
 summary "run-design-check-tests"

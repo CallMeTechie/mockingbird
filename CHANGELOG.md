@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `mb-design-check.sh` accepts `--root DIR` like every other command (0.1.4 gave
+  it to the others and missed this one). It took the flag as the project path
+  itself and died with `kein Manifest unter --root/docs/design/manifest.yaml`,
+  which reads like a broken project rather than a mis-parsed call. An unknown
+  option is now refused instead of being treated as a path. 460 checks.
+
 ## [0.1.9] - 2026-09-04
 
 ### Added
