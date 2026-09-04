@@ -109,3 +109,40 @@ paths, which seam rule 2 would have rejected as "outside the root".
 Format deviations observed: the states reviewer appended a fifth
 explanatory column (parsers ignore it — useful, kept), two reviewers used
 absolute paths (now tolerated).
+
+## 2026-09-04 — second run on `UI-SERVERS`, after fixing two of three blockers
+
+Between the runs: eight `data-ui-id` markers on the elements the manifest
+names (plus an additive `dataUiId` prop on the shared `ContextMenu`), and the
+actions-menu anchor corrected — the manifest had promised Focus/Share/Detach/
+Close, the component holds Snippets/Keyboard/Broadcast/Fullscreen, and
+Share/Detach/Close live in the tab context menu. The manifest was wrong, not
+the code: written during the design dialogue without reading the component.
+
+| element | structure 1 → 2 | flow 1 → 2 |
+|---|---|---|
+| UI-SERVERS-LIST | ok → ok | – |
+| UI-SERVERS-SEARCH | partial → **ok** | – |
+| UI-SERVERS-LIST-MENU | partial → **ok** | ok → ok |
+| UI-SERVERS-TABS | ok → ok | ok → ok |
+| UI-SERVERS-VIEW | partial → **ok** | – |
+| UI-SERVERS-FOCUS | no-locator → no-locator | partial → no-locator |
+| UI-SERVERS-KEYBAR | partial → **ok** | – |
+| UI-SERVERS-ACTIONS | partial → **ok** | **violated → ok** |
+| UI-SERVERS-WELCOME | partial → **ok** | – |
+
+Verdict still `MISMATCH`, but from three blockers down to one, and that one
+is the honest one: the focus mode was decided during the design dialogue and
+has not been built. Everything that exists now verifies clean.
+
+Two more plugin limits fixed along the way, both hit while doing the work
+rather than while testing: the parser refused YAML block scalars, so a
+corrected anchor longer than one line made the whole manifest unparsable
+(0.1.5); and the web locator only knew the DOM spelling `data-ui-id`, so the
+one element rendered by a shared component could not reach tier A no matter
+how it was marked (0.1.6, `dataUiId` prop counts too).
+
+Worth noting for the flow stage: with the marker present it reported
+`unverified:no-locator` for the focus mode instead of the earlier `partial`
+that had latched onto the F11 fullscreen. The stricter answer is the correct
+one — the designed behaviour does not exist; something adjacent does.
