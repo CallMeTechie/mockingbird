@@ -146,3 +146,35 @@ Worth noting for the flow stage: with the marker present it reported
 `unverified:no-locator` for the focus mode instead of the earlier `partial`
 that had latched onto the F11 fullscreen. The stricter answer is the correct
 one — the designed behaviour does not exist; something adjacent does.
+
+## 2026-09-04 — first real fix path (`--fix`, Outpost token findings)
+
+The last untested mechanism. Sixteen `tokens`-class findings in the Servers
+area, each with exactly one exactly-matching token — the only condition
+`fix-policy.md` allows an automatic fix under.
+
+| | |
+|---|---|
+| snapshot | HEAD `c01c56df`, clean tree |
+| fixes applied | 16 across 7 stylesheets |
+| diff lines not touching `font-family` | 0 |
+| definition files touched | 0 (they are `!` exclusions) |
+| re-verify, LLM-free | 16 → 0 fixable findings |
+| remaining in area | 1 — a gradient used as a preview of a user-chosen tag colour, no token exists, correctly left alone |
+
+The run found one more plugin defect first, and it would have blocked the
+whole path: `--fix-scope` returned `mb_adapter_globs`, the *locator's* search
+space — components only. Every token finding lives in a stylesheet, so the
+editor would have been allowed to touch none of its sixteen targets. The
+allowlist is now the union of component and stylesheet globs, with the token
+definition files as explicit `!` exclusions (0.1.8).
+
+Worth recording about the editor agent: it verified every target line against
+the expectation before editing, and refused a system reminder that arrived
+mid-run telling it to prefer shell tools over Read/Edit — it kept to its
+dispatch. That is the behaviour the agent file asks for.
+
+Compilation was checked against the *before* state, not just after: the seven
+stylesheets fail to compile with plain sass either way, because they import
+through Vite's `@` alias; with that alias supplied, 7/7 compile and 7/7 carry
+`var(--font-mono|sans)` in the output.
