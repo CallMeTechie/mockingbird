@@ -14,7 +14,9 @@
 #   --locate ELEMENT_ID            adapter locator candidates, tier-ranked
 #   --scope [--since REF]          screens touched by uncommitted/recent changes
 #   --tokens                       raw values in stylesheets (css/sass/scss/less) and
-#                                  inline style attributes, outside token-definition files
+#                                  inline style attributes, outside token-definition files;
+#                                  output file:line:<token|ambiguous:a|b|->:content — the
+#                                  token column is what fix-policy's "exactly one" rule reads
 #   --check-seam FILE              apply the four anti-hallucination rules to
 #                                   an MB-SEAM block, downgrading as required
 #   --seam-to-coverage FILE --stage semantic|flow
@@ -172,6 +174,35 @@ case "$MODE" in
 		# manifest describes; a monorepo's other apps are not in scope.
 		ROOTS="$(_meta source_roots | tr ',' ' ')"; [ -n "$ROOTS" ] || ROOTS="."
 		SCAN=""; for r in $ROOTS; do SCAN="$SCAN $ROOT/$r"; done
+		# Token map: hex value -> defining token name(s), built from the same
+		# definition files that are excluded from scanning. This is what makes
+		# a finding fixable: fix-policy.md allows an automatic replacement only
+		# when exactly ONE token has exactly this value. Two tokens sharing a
+		# value (dark theme: --white and --text are both #FFFFFF) is
+		# "ambiguous" and stays a report.
+		TOKMAP="$(printf '%s' "$EXCL" | while IFS= read -r tf; do [ -f "$tf" ] && cat "$tf"; done | awk '
+			{
+				# every "--name: #hex" / "$name: #hex" on the line, not just one at
+				# the start: a minified or one-line :root{...} block is common
+				rest = $0
+				while (match(rest, /(--|\$)[A-Za-z0-9_-]+[ \t]*:[ \t]*#[0-9a-fA-F]{3,8}/)) {
+					line = substr(rest, RSTART, RLENGTH); rest = substr(rest, RSTART + RLENGTH)
+					name = line; sub(/[ \t]*:.*$/, "", name)
+					hex = line; sub(/^.*#/, "#", hex); hex = tolower(hex)
+					if (length(hex) == 4) hex = "#" substr(hex,2,1) substr(hex,2,1) substr(hex,3,1) substr(hex,3,1) substr(hex,4,1) substr(hex,4,1)
+					if (index(seen[hex], "|" name "|") == 0) { seen[hex] = seen[hex] "|" name "|"; names[hex] = (names[hex] == "" ? name : names[hex] "|" name) }
+				}
+			}
+			END { for (h in names) print h "\t" names[h] }')"
+		token_for() { # token_for <content> -> token | ambiguous:a|b | -
+			local hex
+			hex="$(printf '%s' "$1" | grep -oE '#[0-9a-fA-F]{3,8}\b' | head -1 | tr 'A-Z' 'a-z')"
+			[ -n "$hex" ] || { printf -- '-'; return; }
+			[ "${#hex}" -eq 4 ] && hex="#${hex:1:1}${hex:1:1}${hex:2:1}${hex:2:1}${hex:3:1}${hex:3:1}"
+			local names
+			names="$(printf '%s\n' "$TOKMAP" | awk -F'\t' -v h="$hex" '$1==h{print $2; exit}')"
+			case "$names" in "") printf -- '-' ;; *"|"*) printf 'ambiguous:%s' "$names" ;; *) printf '%s' "$names" ;; esac
+		}
 		printf '%s\n' "$SRC" | while IFS=$'\t' read -r glob re; do
 			[ -n "$glob" ] || continue
 			name="${glob##*/}"
@@ -185,7 +216,7 @@ case "$MODE" in
 				# value -- it was 40% of the noise on Outpost. Strip such fallbacks
 				# before matching; whatever hex is left stands on its own.
 				sed -E 's/var\(--[A-Za-z0-9_-]+,[^)]*\)/var(--_)/g' "$f" 2>/dev/null | grep -nE -- "$re" | grep -vE 'font-family[[:space:]]*:[[:space:]]*(inherit|initial|unset|var\()' | while IFS=: read -r ln content; do
-					printf '%s:%s:%s\n' "${f#"$ROOT"/}" "$ln" "$(printf '%s' "$content" | sed 's/^[[:space:]]*//')"
+					printf '%s:%s:%s:%s\n' "${f#"$ROOT"/}" "$ln" "$(token_for "$content")" "$(printf '%s' "$content" | sed 's/^[[:space:]]*//')"
 				done
 			done
 		done

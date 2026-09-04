@@ -76,5 +76,6 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   during a run is fixed in the plugin (code, test, commit) — never written
   into the user's project as a "known gap"; ask only when the fix touches a
   decision of theirs.
-- 407 automated checks across twelve suites; `tests/MANUAL-INTEGRATION.md` for
+- `--tokens` names the matching token per finding (`file:line:<token|ambiguous:a|b|->:content`), built from `tokens_css` + `token_definitions:` — the input fix-policy's "exactly one exact token" rule needs to auto-fix anything at all. Two tokens sharing a value stay a report.
+- 412 automated checks across twelve suites; `tests/MANUAL-INTEGRATION.md` for
   what is LLM-driven and therefore not automatable.
