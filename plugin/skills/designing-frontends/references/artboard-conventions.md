@@ -12,7 +12,9 @@ Screen).
 ## Locator-Attribute — der wichtigste Punkt
 
 **Jedes Element, das im Manifest eine ID hat, trägt im Artboard
-`data-ui-id="<ID>"`.** Das ist optional für den späteren Bau (der
+`data-ui-id="<ID>"`.** (Im Produktivcode zählt zusätzlich die
+React-Prop-Schreibweise `dataUiId="<ID>"` — nötig, wenn eine gemeinsame
+Komponente das Element rendert und den Marker durchreichen muss.) Das ist optional für den späteren Bau (der
 `/design-verify`-Locator degradiert sauber auf schwächere Erkennung ohne
 Marker), aber verbindlich für das Artboard selbst — es ist die einzige
 Stelle, an der die Zuordnung Manifest-Element ↔ visuelles Element eindeutig

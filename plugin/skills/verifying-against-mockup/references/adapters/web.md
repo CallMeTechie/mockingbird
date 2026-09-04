@@ -31,7 +31,9 @@ hartkodiertes Array/Objekt direkt im Frontend-Code (`stub-data`).
 
 ## Locator-Konvention dieses Plugins
 
-`data-ui-id="<ID>"` (Tier A) ist die stärkste Evidenz. Ohne sie degradiert
+`data-ui-id="<ID>"` (Tier A) ist die stärkste Evidenz; ebenso die
+React-Prop-Schreibweise `dataUiId="<ID>"`, wenn eine gemeinsame Komponente
+den Marker durchreicht. Ohne sie degradiert
 der Locator sauber auf Tier B (Label-String) oder C (Namenskonvention) —
 das ist kein Fehler, nur ein schwächerer Beweis, und das
 Coverage-Regelwerk deckelt Tier-C-Befunde bereits automatisch.

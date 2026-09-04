@@ -7,6 +7,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-09-04
+
+### Added
+
+- The web locator accepts the React prop spelling `dataUiId="X"` as tier A alongside the DOM attribute `data-ui-id="X"` — needed whenever a shared component renders the element and the marker has to be passed through (Outpost's ContextMenu). 433 checks.
+
 ## [0.1.5] - 2026-09-04
 
 ### Added

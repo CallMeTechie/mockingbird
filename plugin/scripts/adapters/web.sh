@@ -30,15 +30,17 @@ GLOBS
 mb_adapter_locate() {
 	local id="$1" label="$2" root="${MB_ADAPTER_ROOT:-.}" any=0 f
 
-	# Tier A: an explicit data-ui-id marker. Certain -- this plugin's own
-	# artboard-writer agent emits exactly this attribute.
+	# Tier A: an explicit marker. Two spellings, both certain: the DOM attribute
+	# data-ui-id="X", and the camelCase prop dataUiId="X" that a React component
+	# takes when the marker has to be handed to a shared component which renders
+	# the element (found on Outpost: a ContextMenu used by many screens).
 	while IFS= read -r f; do
 		[ -n "$f" ] || continue
 		while IFS=: read -r ln _; do
 			[ -n "$ln" ] || continue
 			printf 'A\t%s:%s\n' "${f#"$root"/}" "$ln"
 			any=1
-		done < <(grep -nF -- "data-ui-id=\"$id\"" "$f" 2>/dev/null; grep -nF -- "data-ui-id='$id'" "$f" 2>/dev/null)
+		done < <(grep -nE -- "(data-ui-id|dataUiId)=\\{?[\"']${id}[\"']\\}?" "$f" 2>/dev/null)
 	done < <(_mb_web_candidate_files "$root")
 
 	# Tier B: an unambiguous match of the label string itself.
