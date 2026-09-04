@@ -369,3 +369,65 @@ host, port and protocol. A free target is an architecture change across four
 layers that also decides who may reach a host without an entry standing between
 them. That is a policy question, so it went back to the user rather than being
 built quietly.
+
+## 2026-09-04 — the last blocker, and what four review rounds cost it
+
+The user's instruction was that blockers get resolved, not documented. The one
+left was `UI-DIRECT-CONNECT-HOST`: a target typed by the user, against a
+connection path anchored on an entry id through four layers.
+
+| screen | verdict |
+| - | - |
+| `UI-SERVERS` | MATCH WITH NOTES |
+| `UI-SERVER-DIALOG` | MATCH |
+| `UI-TMUX-DIALOG` | MATCH |
+| `UI-DIRECT-CONNECT` | **MATCH** |
+
+The build itself turned out small — everything below `createSession` works on an
+entry *object*, so a transient one carries through and no protocol handler
+changed. What the run is worth recording for is the review.
+
+### Four rounds on one element, each finding something real
+
+1. **`partial`** — with the reason requirement read from the account's
+   memberships, a member of an organization that demands one had no way to
+   supply it: the client only asked when it had an entry id. Dead end with a
+   visible error, no security hole, and the reviewer said exactly that.
+2. **`partial` again** — the fix left a narrower version of the same dead end.
+   The server counted memberships *without* a status filter, the client's entry
+   tree carries only `active` ones. A pending invitation therefore demanded a
+   reason the client never asked for. The reviewer found the mismatch by reading
+   both queries and named both directions without deciding.
+3. **`violated`** — the connection now authorised correctly and still could not
+   run: the stand-in entry had no `renderer`, the CONNECTIONS broadcast dropped
+   the tab because `entryId` was null, and `wsAuth` closed the socket with 4002.
+4. **`violated` again** — `renderer` was now set, to `"xterm"`, a value the
+   view's switch does not know. And a fourth place assumed an entry: `getSession`
+   answered 404, so the pop-out discarded the window it had just opened.
+
+Round five: `ok`, with the whole chain traced from click to running terminal.
+
+### The lesson is about how I worked, not about the reviewers
+
+Rounds 3 and 4 were the same failure twice: I fixed the finding in front of me
+instead of asking what else assumes an entry id. Between round 4 and 5 I finally
+enumerated every place that derives an entry from a session — eleven of them —
+and classified each. Two needed fixing; the rest refuse cleanly, and that is now
+written into the guide as a stated limit rather than left to be discovered. That
+enumeration took one command and would have saved two rounds.
+
+Reviewer quality worth noting: round 4's finding came from following the value
+`"xterm"` into a switch statement in a different component, and round 2's from
+comparing two Sequelize queries in two files. Neither is something a locator
+finds; both needed someone to ask what the value actually meets downstream.
+
+### What the run cost the plugin
+
+`--healthcheck` had never offered the project's test suite, and `source_roots:`
+had been hiding the repo root from it entirely — so a change reaching into
+`server/` was verified without the 1086 tests sitting behind the root `test`
+script. Root `files` commands are now offered *alongside* the packages' own: a
+first attempt had the root supersede them, which silently stopped linting the
+whole client while still reporting PASS, because Outpost's root eslint config
+matches `server/` and `scripts/` only. Caught within the same run by looking at
+what the command actually covered rather than at its exit code.
