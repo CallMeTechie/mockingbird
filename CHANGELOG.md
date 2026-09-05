@@ -35,6 +35,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   installs yq explicitly rather than relying on the runner image shipping one.
   497 checks with yq, 481 without.
 
+- `MB_NO_YQ=1` forces the awk fallback. The parity suite needs both paths on one
+  machine, and hiding a binary through PATH is not something a test can do: a CI
+  runner ships yq in `/usr/bin`, which no minimal PATH excludes -- the first
+  attempt at this suite failed in CI for exactly that reason. It doubles as an
+  escape hatch for a yq build this code cannot use.
+
 ### Added
 
 - Sixth adapter-contract function `mb_adapter_runtime_css` and the

@@ -45,12 +45,20 @@ MB_F_DEFERRED_REASON=16
 MB_F_SKIP_REASON=17
 MB_F_SCREEN_USES=18
 
+# Whether the yq path may be used. MB_NO_YQ=1 forces the awk fallback: the parity suite needs
+# to run both paths on one machine, and hiding a binary via PATH is not something a test can
+# do reliably -- a CI runner ships yq in /usr/bin. It doubles as an escape hatch for a yq
+# build this code cannot use.
+mb_use_yq() {
+	[ -z "${MB_NO_YQ:-}" ] && command -v yq >/dev/null 2>&1
+}
+
 # Emit the normalized element TSV for <file> on stdout.
 # Exit: 0 ok · 3 file missing/unreadable · 5 parse error (yq path: yq/jq failure).
 mb_manifest_to_tsv() {
 	local file="$1"
 	[ -f "$file" ] && [ -r "$file" ] || return 3
-	if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+	if mb_use_yq && command -v jq >/dev/null 2>&1; then
 		yq -o=json '.' -- "$file" 2>/dev/null | jq -r '
 			(.screens // [])[] as $s
 			| (($s.elements // [])[]) as $e
@@ -95,7 +103,7 @@ mb_manifest_meta() {
 	# metadata at all" rather than falling through to awk. Every scalar in a rendered block
 	# came out empty on any machine that had yq installed -- CI runners do, this container
 	# did not, which is why it went unseen.
-	if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+	if mb_use_yq && command -v jq >/dev/null 2>&1; then
 		local out
 		out="$(yq -o=json '.' -- "$file" 2>/dev/null | jq -r '
 			to_entries[]
@@ -225,7 +233,7 @@ mb_manifest_allocations() {
 	local file="$1"
 	[ -f "$file" ] && [ -r "$file" ] || return 3
 	# Same jq-through-yq split as above, and the same reason: this expression is jq's.
-	if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+	if mb_use_yq && command -v jq >/dev/null 2>&1; then
 		local out rc
 		out="$(yq -o=json '.' -- "$file" 2>/dev/null | jq -r '(.allocations // [])[] | [.spec, (if (.owns // []) == [] then "-" else (.owns|join(",")) end), (if (.consumes // []) == [] then "-" else (.consumes|join(",")) end)] | @tsv' 2>/dev/null)"
 		rc=$?

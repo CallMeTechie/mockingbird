@@ -29,16 +29,11 @@ if ! command -v yq >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
     exit 0
 fi
 
-# Runs one library function under a PATH that hides yq, so the awk fallback is taken.
-# Hiding yq rather than adding a test-only switch to the library keeps the production code
-# free of anything that exists solely for tests.
+# MB_NO_YQ forces the awk fallback. A PATH that excludes yq was the first attempt and does
+# not work: a CI runner has it in /usr/bin, which a minimal PATH cannot leave out.
 without_yq() {
     local fn="$1" file="$2"
-    env -i PATH="/usr/bin:/bin" HOME="$HOME" bash -c '
-        . "$1" 2>/dev/null
-        command -v yq >/dev/null 2>&1 && { echo "yq still reachable" >&2; exit 99; }
-        "$2" "$3"
-    ' _ "$LIB" "$fn" "$file"
+    MB_NO_YQ=1 bash -c '. "$1"; "$2" "$3"' _ "$LIB" "$fn" "$file"
 }
 
 with_yq() {
