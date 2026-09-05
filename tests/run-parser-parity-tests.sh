@@ -25,7 +25,8 @@ LIB="$ROOT/plugin/lib/mockingbird-manifestlib.sh"
 if ! command -v yq >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
     echo "run-parser-parity-tests: SKIPPED -- needs both yq and jq to compare the two paths"
     echo "  (install yq to check the branch CI runners take)"
-    summary "run-parser-parity-tests"
+    # The fallback must not be more permissive than YAML. A colon-space inside an unquoted
+summary "run-parser-parity-tests"
     exit 0
 fi
 
@@ -116,5 +117,73 @@ for path in with without; do
     check "$path yq: no literal backslash-n in the TSV" "0" "$(printf '%s' "$out" | grep -c '\\n')"
     check "$path yq: label is one folded line" "a label written across two lines" "$(printf '%s' "$out" | cut -f6)"
 done
+
+# scalar makes the file invalid YAML; a line-based parser happily reads everything after the
+# first colon as the value, and the manifest then works in one half of the toolchain and not
+# the other. Found on Outpost, where an anchor read "(pointer: coarse, kein Breitpunkt)".
+echo "== the fallback is not more permissive than YAML =="
+NESTED="$SANDBOX/nested-colon.yaml"
+cat > "$NESTED" <<'YAML'
+schema: mockingbird/1
+project: p
+revision: 1
+screens:
+  - id: UI-X
+    kind: page
+    title: X
+    artboard: docs/design/mockups/x.html
+    elements:
+      - id: UI-X-A
+        type: text
+        label: L
+        status: required
+        verify: required
+        data_source: static
+        semantic_anchor:
+          means: only on touch devices (pointer: coarse, no fine pointer)
+          concept: thing
+        states:
+          - { id: default }
+YAML
+yq -o=json '.' -- "$NESTED" >/dev/null 2>&1
+check "yq refuses it" "1" "$([ $? -ne 0 ] && echo 1 || echo 0)"
+without_yq mb_manifest_to_tsv "$NESTED" >/dev/null 2>&1
+check "the awk fallback refuses it too (exit 5)" "5" "$?"
+
+# The exemptions have to hold, or every quoted value with a colon in it becomes a false
+# positive -- and the manifest schema is full of them.
+echo "== values that legitimately contain a colon still parse =="
+OK="$SANDBOX/colon-ok.yaml"
+cat > "$OK" <<'YAML'
+schema: mockingbird/1
+project: p
+revision: 1
+design_system: docs/design/design-system.md
+screens:
+  - id: UI-X
+    kind: page
+    title: X
+    artboard: docs/design/mockups/x.html
+    presentation: { over: UI-Y, trigger: "menu: edit", size: "44rem" }
+    elements:
+      - id: UI-X-A
+        type: text
+        label: L
+        status: required
+        verify: required
+        data_source: "GET /api/v1/orders?status=open"
+        semantic_anchor:
+          means: >
+            a folded scalar may contain a colon: YAML knows what to do with it
+          concept: thing
+        locators:
+          web: "[data-ui-id='UI-X-A']"
+        states:
+          - { id: default }
+YAML
+yq -o=json '.' -- "$OK" >/dev/null 2>&1
+check "yq accepts it" "0" "$?"
+without_yq mb_manifest_to_tsv "$OK" >/dev/null 2>&1
+check "the awk fallback accepts it too" "0" "$?"
 
 summary "run-parser-parity-tests"

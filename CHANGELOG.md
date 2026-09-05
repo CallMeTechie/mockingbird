@@ -9,6 +9,17 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The awk fallback refuses a one-line scalar whose unquoted value contains
+  `": "`. YAML reads that as a nested mapping and rejects the file; a line-based
+  parser takes everything after the first colon as the value and accepts it. Being
+  more permissive than YAML is the one thing this parser must not be -- a manifest
+  it accepts and a real YAML parser refuses works in one half of the toolchain and
+  not the other, which is exactly what happened: Outpost's own manifest read
+  `"... (pointer: coarse, kein Breitpunkt) ..."` and had been passing for days,
+  until yq was installed on the machine and `--validate` started answering 5.
+  Quoted, flow and block values stay exempt; a colon inside those is YAML's
+  business. 501 checks with yq.
+
 - The yq path of the manifest parser was broken for its whole life, and nothing
   noticed because no machine that ran the suite locally had yq installed while
   every CI runner does. `mb_manifest_meta` and `mb_manifest_allocations` handed a
@@ -33,7 +44,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   absence let the above live — every other suite exercises whichever path the
   machine happens to have. It skips loudly when only one is available, and CI now
   installs yq explicitly rather than relying on the runner image shipping one.
-  497 checks with yq, 481 without.
+  501 checks with yq, 481 without.
 
 - `MB_NO_YQ=1` forces the awk fallback. The parity suite needs both paths on one
   machine, and hiding a binary through PATH is not something a test can do: a CI

@@ -102,6 +102,32 @@ function meta(key, val) {
 	if (META_FD != "") printf "%s\t%s\n", key, val > META_FD
 }
 
+# Refuse a one-line scalar whose unquoted value contains ": " -- YAML reads that as a nested
+# mapping and rejects the file, while this line-based parser happily takes everything after
+# the first colon as the value. Being more permissive than YAML is the one thing this parser
+# must not be: a manifest it accepts and a real YAML parser refuses is a file that works in
+# one half of the toolchain and not the other.
+#
+# Found on Outpost, 2026-09-05: an anchor read "... nur auf Touch-Geraeten (pointer: coarse,
+# kein Breitpunkt), und ..." -- valid to this parser, invalid YAML, and the mismatch only
+# showed when yq was installed on the machine.
+#
+# Quoted, flow ({...}, [...]) and block (>, |) values are exempt: a colon inside them is
+# YAML's business and it knows what to do with it. Block scalars never reach here anyway --
+# they are folded above.
+function check_subset(l,    body) {
+	if (l ~ /^[ \t]*#/) return
+	if (l !~ /^[ \t]*(- )?[A-Za-z_][A-Za-z0-9_]*:[ \t]+/) return
+
+	body = l
+	sub(/^[ \t]*(- )?[A-Za-z_][A-Za-z0-9_]*:[ \t]+/, "", body)
+	sub(/[ \t]+$/, "", body)
+
+	if (body ~ /^["'"'"'{\[>|]/) return
+	if (body ~ /: /)
+		parse_error("unquoted value contains \": \", which YAML reads as a nested mapping: " l)
+}
+
 function parse_error(msg) {
 	printf "mockingbird-manifest.awk: parse error at line %d: %s\n", NR, msg > "/dev/stderr"
 	errors++
@@ -151,6 +177,8 @@ function flush_block(   folded) {
 		block_buf = ""
 		next
 	}
+
+	check_subset(line)
 
 	redo = 1
 	while (redo) {
