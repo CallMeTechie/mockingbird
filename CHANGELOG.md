@@ -7,6 +7,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The yq path of the manifest parser was broken for its whole life, and nothing
+  noticed because no machine that ran the suite locally had yq installed while
+  every CI runner does. `mb_manifest_meta` and `mb_manifest_allocations` handed a
+  *jq* expression straight to yq, which cannot parse jq syntax; yq failed,
+  `2>/dev/null` hid the message, and `return $?` reported success — so every
+  scalar in a rendered spec block (`design_rev`, `system`, `index`, `adapter`)
+  came out empty, and the awk fallback was never reached because the yq branch
+  had already returned. Both now convert with yq and query with jq, the way
+  `mb_manifest_to_tsv` always did, and fall through to awk when that yields
+  nothing.
+
+  Two more differences surfaced once the path ran at all: a manifest yq refuses
+  came back as "valid, no elements" (in a pipe `$?` is jq's, and jq succeeds on
+  empty input) instead of a parse error, so a broken file was reported as
+  semantically invalid — naming the wrong problem; and block scalars kept the
+  newlines yq preserves, which `@tsv` escaped into a literal `\n`, where the awk
+  parser folds them. Both fixed. `mb_manifest_meta` also stops emitting the
+  fallback's `allocation` lines, which only that path produced.
+
+- New suite `run-parser-parity-tests.sh`: the two parsers must answer
+  identically, function by function, on the same input. This is the check whose
+  absence let the above live — every other suite exercises whichever path the
+  machine happens to have. It skips loudly when only one is available, and CI now
+  installs yq explicitly rather than relying on the runner image shipping one.
+  497 checks with yq, 481 without.
+
 ### Added
 
 - Sixth adapter-contract function `mb_adapter_runtime_css` and the

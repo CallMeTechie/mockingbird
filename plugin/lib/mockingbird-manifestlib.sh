@@ -56,9 +56,14 @@ mb_manifest_to_tsv() {
 			| (($s.elements // [])[]) as $e
 			| [
 				($s.id // "-"), ($s.kind // "-"), ($s.artboard // "-"),
-				($e.id // "-"), ($e.type // "-"), ($e.label // "-"),
+				($e.id // "-"), ($e.type // "-"), (($e.label // "-") | gsub("\\s+"; " ") | sub("^ "; "") | sub(" $"; "")),
 				($e.status // "-"), ($e.verify // "-"), ($e.data_source // "-"),
-				($e.semantic_anchor.means // "-"), ($e.semantic_anchor.concept // "-"),
+				# Block scalars are folded to one line, matching what the awk parser does:
+				# the TSV is one record per line by construction, and @tsv would otherwise
+				# escape the newlines into a literal \n that every consumer then carries
+				# around. yq keeps the newlines a > or | scalar had; the fallback never did.
+				(($e.semantic_anchor.means // "-") | gsub("\\s+"; " ") | sub("^ "; "") | sub(" $"; "")),
+				($e.semantic_anchor.concept // "-"),
 				(if ($e.semantic_anchor.aliases // []) == [] then "-" else ($e.semantic_anchor.aliases | join(",")) end),
 				(if ($e.semantic_anchor.not // []) == [] then "-" else ($e.semantic_anchor.not | join(",")) end),
 				(if ($e.states // []) == [] then "-" else (($e.states // []) | map(.id) | join(",")) end),
@@ -66,7 +71,14 @@ mb_manifest_to_tsv() {
 				($e.deferred_reason // "-"), ($e.reason // "-"),
 				(if ($s.uses // []) == [] then "-" else ($s.uses | join(",")) end)
 			] | @tsv'
-		return $?
+		# In a pipe, $? is jq's -- and jq succeeds on empty input, so a YAML file yq
+		# refused came back as "exit 0, no elements" instead of a parse error. The
+		# manifest then failed its semantic checks (no screens) and reported 6, hiding
+		# that nothing had been read at all. PIPESTATUS is what distinguishes the two.
+		local rc_yq="${PIPESTATUS[0]}" rc_jq="${PIPESTATUS[1]}"
+		[ "$rc_yq" -eq 0 ] || return 5
+		[ "$rc_jq" -eq 0 ] || return 5
+		return 0
 	fi
 	awk -f "$MB_MANIFEST_AWK" -- "$file"
 }
@@ -77,15 +89,34 @@ mb_manifest_to_tsv() {
 mb_manifest_meta() {
 	local file="$1"
 	[ -f "$file" ] && [ -r "$file" ] || return 3
-	if command -v yq >/dev/null 2>&1; then
-		yq -r '
+	# yq converts, jq queries -- the same split mb_manifest_to_tsv uses. The expression
+	# below is jq's, and mikefarah/yq does not speak it: handing it straight to yq made it
+	# fail with a lexer error, which 2>/dev/null hid and `return $?` turned into "no
+	# metadata at all" rather than falling through to awk. Every scalar in a rendered block
+	# came out empty on any machine that had yq installed -- CI runners do, this container
+	# did not, which is why it went unseen.
+	if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+		local out
+		out="$(yq -o=json '.' -- "$file" 2>/dev/null | jq -r '
 			to_entries[]
 			| select(.key as $k | ["schema","project","revision","updated","design_system","mockups_index","tokens_css","primary_adapter","token_definitions","source_roots"] | index($k))
 			| "\(.key)\t\(if (.value|type)=="array" then (.value|join(",")) else .value end)"
-		' -- "$file" 2>/dev/null
-		return $?
+		' 2>/dev/null)"
+		# Falls through to awk rather than returning nothing: an empty result here is
+		# indistinguishable from a manifest with no metadata, and that silence is exactly
+		# what made the original bug invisible.
+		if [ -n "$out" ]; then
+			printf '%s\n' "$out"
+			return 0
+		fi
 	fi
-	MB_META_FD=/dev/fd/3 awk -f "$MB_MANIFEST_AWK" -- "$file" 3>&1 1>/dev/null
+	# The awk parser emits allocations on the same descriptor -- it reads the file once and
+	# lets each consumer filter. That is an implementation detail of the fallback, not part
+	# of what this function promises, and it made the two paths differ: only the awk one
+	# returned those lines. Dropped here so both answer identically; mb_manifest_allocations
+	# is where allocations come from.
+	MB_META_FD=/dev/fd/3 awk -f "$MB_MANIFEST_AWK" -- "$file" 3>&1 1>/dev/null \
+		| awk -F'\t' '$1!="allocation"'
 }
 
 # Field getter: mb_tsv_field <tsv-line> <field-index>
@@ -193,9 +224,17 @@ mb_manifest_validate() {
 mb_manifest_allocations() {
 	local file="$1"
 	[ -f "$file" ] && [ -r "$file" ] || return 3
-	if command -v yq >/dev/null 2>&1; then
-		yq -r '(.allocations // [])[] | [.spec, (if (.owns // []) == [] then "-" else (.owns|join(",")) end), (if (.consumes // []) == [] then "-" else (.consumes|join(",")) end)] | @tsv' -- "$file" 2>/dev/null
-		return $?
+	# Same jq-through-yq split as above, and the same reason: this expression is jq's.
+	if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+		local out rc
+		out="$(yq -o=json '.' -- "$file" 2>/dev/null | jq -r '(.allocations // [])[] | [.spec, (if (.owns // []) == [] then "-" else (.owns|join(",")) end), (if (.consumes // []) == [] then "-" else (.consumes|join(",")) end)] | @tsv' 2>/dev/null)"
+		rc=$?
+		# Unlike metadata, no allocations is a legitimate answer (the single-spec case), so
+		# emptiness cannot mean failure here -- jq's exit status has to.
+		if [ "$rc" -eq 0 ]; then
+			[ -n "$out" ] && printf '%s\n' "$out"
+			return 0
+		fi
 	 fi
 	MB_META_FD=/dev/fd/3 awk -f "$MB_MANIFEST_AWK" -- "$file" 3>&1 1>/dev/null | awk -F'\t' '$1=="allocation"{print $2 "\t" $3 "\t" $4}'
 }

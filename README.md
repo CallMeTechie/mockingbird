@@ -82,7 +82,7 @@ claude plugin install /path/to/mockingbird/plugin
 
 ## Status
 
-Built and tested, 481 automated checks across twelve suites: the plugin
+Built and tested, 497 automated checks across twelve suites: the plugin
 scaffold; the hook layer (path detection, two-hash drift state, session-aware
 locking); the design marker block (placement next to preflight's security
 block, idempotent rendering); the manifest parser and validator; propagation
@@ -124,7 +124,7 @@ disables the nudges for a project.
 Plain bash, no framework.
 
 ```
-tests/run-all.sh                    # everything (481 checks as of this writing)
+tests/run-all.sh                    # everything (497 checks as of this writing)
 tests/run-hook-tests.sh             # path detection, state, locking, end-to-end hook
 tests/run-block-tests.sh            # marker block: exit contract, fences, idempotent render
 tests/run-manifest-tests.sh         # strict-subset YAML parser, TSV normal form, validation

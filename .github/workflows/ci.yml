@@ -29,8 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+      # Both parsers get exercised here: jq drives the yq path, and run-parser-parity-tests
+      # compares it against the awk fallback. yq is preinstalled on the current runner
+      # image, but installing it explicitly is what keeps that from being luck -- the yq
+      # path went unchecked for its whole life precisely because no machine that ran the
+      # suite locally had it.
+      - name: Install jq and yq
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+          command -v yq >/dev/null || sudo snap install yq
+          yq --version && jq --version
       - name: Run every suite
         run: bash tests/run-all.sh
 
