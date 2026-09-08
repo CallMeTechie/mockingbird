@@ -139,6 +139,12 @@ check_rc "verify skip without reason" 6 mb_manifest_validate "$F"
 
 F="$VALID"
 MB_VALIDATE_ROOT="$SANDBOX" check_rc "missing artboard (with MB_VALIDATE_ROOT)" 6 mb_manifest_validate "$F"
+# The artboard is a screen-level fact, but the TSV has one row per element, so the
+# check used to fire once per element: UI-ORDERS has three, and one missing file
+# read as three problems. Counted here rather than eyeballed, because the exit code
+# is 6 either way and nothing else would notice the regression.
+ARTBOARD_LINES="$(MB_VALIDATE_ROOT="$SANDBOX" mb_manifest_validate "$F" 2>&1 >/dev/null | grep -c 'UI-ORDERS: artboard path does not exist')"
+check "missing artboard reported once per screen, not per element" "1" "$ARTBOARD_LINES"
 mkdir -p "$SANDBOX/docs/design/mockups"
 touch "$SANDBOX/docs/design/mockups/ui-orders.html" "$SANDBOX/docs/design/mockups/ui-shell.html"
 MB_VALIDATE_ROOT="$SANDBOX" check_rc "present artboard (with MB_VALIDATE_ROOT)" 0 mb_manifest_validate "$F"
