@@ -54,6 +54,22 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Kanal C and preflight's per-task lines now have a defined relationship. preflight
+  0.3.0 requires `**Tests:**` and `**Parallel:**` inside every `### Task N` — the
+  same block `design-sync` writes its design table into, and the same block
+  `task-brief` cuts the implementer's brief from. The design table goes **before**
+  the two lines (a multi-line table between two one-liners makes every later sync
+  move lines that did not change), and `design-sync` never rewrites them: a
+  contradiction between budget and design is a finding for the report, not a silent
+  edit by the other plugin. For a UI task the budget names the manifest states the
+  task builds and deliberately stops there — re-asserting labels, copy and tokens by
+  hand duplicates what `verifying-against-mockup` already proves against the
+  manifest, and goes stale on the next `/design`.
+
+  `tests/run-plan-propagation-tests.sh` covers it with the real vendored
+  `task-brief` awk: both lines reach their own brief, neither leaks into a
+  neighbouring one, and the ordering holds.
+
 - Sixth adapter-contract function `mb_adapter_runtime_css` and the
   `--runtime-css` mode: the mechanisms by which an app appends whole stylesheets
   at runtime (`createElement("style")`, `insertRule`, `adoptedStyleSheets`, a

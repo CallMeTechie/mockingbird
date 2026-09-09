@@ -95,6 +95,11 @@ weil Tasks und ihre Elementzuordnung projektspezifisch sind und ein Mensch
    Fence zerreißt den `task-brief`-Schnitt der Folgetasks). Format und ein
    vollständiges Beispiel in `references/plan-propagation.md#kanal-c`.
    Werte immer wörtlich aus dem Manifest übernehmen, nie umformulieren.
+
+   Trägt der Task bereits preflights Zeilen `**Tests:**` / `**Parallel:**`,
+   steht Kanal C **davor** und die beiden Zeilen bleiben wörtlich stehen —
+   Reihenfolge und Begründung in
+   `references/plan-propagation.md#kanal-c-und-preflights-task-zeilen`.
 5. Für jeden Task **ohne** UI-Anteil: die Zeile
    `**Design:** kein UI-Anteil.` einfügen. Ein fehlender Kanal-C-Eintrag ist
    nicht von einem vergessenen unterscheidbar — dieser Satz macht "kein

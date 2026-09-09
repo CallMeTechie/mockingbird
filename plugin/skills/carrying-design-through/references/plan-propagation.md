@@ -94,6 +94,52 @@ der Zeile "Screen: … — Artboard …" (für Tiefe), die Werte stehen in der
 Tabelle (für Exaktheit). Die Duplikation ist auf die Zeilen dieses einen
 Tasks begrenzt und durch `/design-check` gegen das Manifest prüfbar.
 
+## Kanal C und preflights Task-Zeilen
+
+preflight verlangt ab 0.3.0 in jedem `### Task N` zwei weitere Zeilen: `**Tests:**`
+(Testbudget) und `**Parallel:**` (Tasks, die nebenher laufen dürfen). Beide sind
+fett ausgezeichnet wie `**Files:**` und `**Interfaces:**` — dieselbe Konvention,
+damit `task-brief` sie unverändert mitschneidet und ein Mensch sie im Plan findet.
+
+**Reihenfolge im Task-Block**, verbindlich:
+
+```markdown
+**Files:**
+**Interfaces:**
+**Design:**
+**Tests:**
+**Parallel:**
+```
+
+Kanal C wird also **vor** den beiden preflight-Zeilen eingefügt, nicht dazwischen
+und nicht danach. Grund: Die Design-Tabelle ist mehrzeilig, die beiden anderen sind
+Einzeiler. Steht die Tabelle zwischen ihnen, rücken beim nächsten `design-sync`
+Zeilen auseinander, die zusammengehören, und ein Diff zeigt Bewegung, wo keine
+stattgefunden hat.
+
+**`design-sync` fasst die beiden Zeilen nie an.** Es fügt seinen Block ein und
+ersetzt seinen eigenen Block — `**Tests:**` und `**Parallel:**` werden wörtlich
+übernommen, auch wenn sie inhaltlich zum Design nicht passen. Das Testbudget gehört
+preflight; ein stiller Umbau durch das andere Plugin wäre für den Nutzer nicht
+nachvollziehbar. Fällt beim Abgleich auf, dass eine der Zeilen dem Design
+widerspricht, ist das ein Befund für den Bericht, keine Änderung.
+
+**Was `**Tests:**` bei einem UI-Task sinnvoll enthält.** Die im Manifest
+deklarierten Zustände (`states[]`), die der Task baut — nicht mehr. Ausdrücklich
+**nicht** hineingehört, ob Label, Copy, Tokens und fachlicher Anker zum Manifest
+passen: das prüft `verifying-against-mockup` deterministisch gegen das Manifest,
+und ein Test, der dasselbe noch einmal von Hand behauptet, veraltet beim ersten
+`/design` und meldet dann einen Fehler, den es nicht gibt. Ein Task ohne UI-Anteil
+bekommt sein Budget ohne Zutun von mockingbird.
+
+**Was `**Parallel:**` mit dem Design zu tun hat.** Zwei UI-Tasks auf
+**verschiedenen** Screens sind Kandidaten füreinander: sie fassen verschiedene
+Artboards und in aller Regel verschiedene Komponentendateien an. Zwei Tasks auf
+**demselben** Screen sind es nicht, auch wenn sie verschiedene Elemente bauen — sie
+landen in derselben Komponente und damit in derselben Datei. Die Screen-Zuordnung
+aus Kanal C ist dafür die belastbarere Auskunft als die Phase, in der die Tasks
+stehen.
+
 ## Kanal D — DESIGN-COVERAGE
 
 An das Ende des Plans angehängt, nach dem preflight-Vorbild `SEC-COVERAGE`:
