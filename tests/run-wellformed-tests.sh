@@ -52,6 +52,18 @@ import json
 print(1 if json.load(open('$ROOT/.claude-plugin/marketplace.json'))['plugins'][0]['source'] == './plugin' else 0)
 ")"
 
+echo "== skills: every references/ file they name exists =="
+# A SKILL.md that points at a reference file which was never written is a dead
+# end the skill only discovers mid-run, with the user waiting. designing-frontends
+# named references/implementation-guide-template.md for two releases without it
+# existing; nothing in the suite noticed.
+for ref in $(grep -rho 'references/[a-z0-9-]*\.md' "$ROOT/plugin/skills/" | sort -u); do
+	for skill in $(grep -rl "$ref" "$ROOT/plugin/skills/"*/SKILL.md 2>/dev/null); do
+		sdir="$(dirname -- "$skill")"
+		check "$(basename "$sdir"): $ref exists" "1" "$([ -f "$sdir/$ref" ] && echo 1 || echo 0)"
+	done
+done
+
 echo "== no writes to \$CLAUDE_PLUGIN_ROOT =="
 check "no script writes under CLAUDE_PLUGIN_ROOT" "0" "$(grep -rlE '>[^&]*"\$CLAUDE_PLUGIN_ROOT|mkdir[^"]*"\$CLAUDE_PLUGIN_ROOT' "$ROOT/plugin" 2>/dev/null | wc -l | tr -d ' ')"
 

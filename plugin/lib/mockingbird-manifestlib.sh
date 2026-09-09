@@ -155,15 +155,25 @@ mb_manifest_validate() {
 		states loc_web reason_deferred reason_skip scr_uses; do
 		[ -n "$elem_id" ] || continue
 
-		if ! mb_valid_id "$scr_id"; then
-			echo "invalid screen id grammar: $scr_id" >&2; problems=$((problems + 1))
-		fi
 		if ! mb_valid_id "$elem_id"; then
 			echo "invalid element id grammar: $elem_id" >&2; problems=$((problems + 1))
 		fi
+		# The TSV carries one row per *element*, so every screen-level field is
+		# repeated on each of that screen's rows. Screen-level checks therefore run
+		# only on a screen's first sighting - otherwise one missing artboard is
+		# reported once per element and counted that many times as a problem, which
+		# turns "one file is missing" into a wall of nine identical lines.
 		case "$seen_screens" in
 			*" $scr_id "*) ;;
-			*) seen_screens="$seen_screens$scr_id " ;;
+			*)
+				seen_screens="$seen_screens$scr_id "
+				if ! mb_valid_id "$scr_id"; then
+					echo "invalid screen id grammar: $scr_id" >&2; problems=$((problems + 1))
+				fi
+				if [ "$scr_artboard" != "-" ] && [ -n "${MB_VALIDATE_ROOT:-}" ]; then
+					[ -f "$MB_VALIDATE_ROOT/$scr_artboard" ] || { echo "$scr_id: artboard path does not exist: $scr_artboard" >&2; problems=$((problems + 1)); }
+				fi
+				;;
 		esac
 		case "$seen_elements" in
 			*" $elem_id "*) echo "duplicate element id: $elem_id" >&2; problems=$((problems + 1)) ;;
@@ -192,9 +202,6 @@ mb_manifest_validate() {
 			*) echo "$elem_id: states list has no 'default'" >&2; problems=$((problems + 1)) ;;
 		esac
 
-		if [ "$scr_artboard" != "-" ] && [ -n "${MB_VALIDATE_ROOT:-}" ]; then
-			[ -f "$MB_VALIDATE_ROOT/$scr_artboard" ] || { echo "$scr_id: artboard path does not exist: $scr_artboard" >&2; problems=$((problems + 1)); }
-		fi
 	done <<< "$tsv"
 
 	# Cross-references: every id named in a screen's uses: list and in

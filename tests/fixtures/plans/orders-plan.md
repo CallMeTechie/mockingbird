@@ -41,6 +41,10 @@
 
 **Design:** kein UI-Anteil.
 
+**Tests:** Ein Integrationstest über den Endpunkt: offene Bestellungen kommen zurück, versendete nicht.
+
+**Parallel:** keine — Task 2 verbraucht die Antwortform dieses Endpunkts.
+
 - [ ] **Step 1: Write the failing test**
 - [ ] **Step 2: Run test to verify it fails**
 - [ ] **Step 3: Write minimal implementation**
@@ -67,6 +71,10 @@
 
 - Locator: jedes Element trägt `data-ui-id="<ID>"`.
 - Tokens: `color.surface`, `color.text.muted`, `space.4`, `type.body`
+
+**Tests:** Ein Rendertest je Manifest-Zustand von UI-ORDERS-TABLE (default, loading, empty, error). Keine Prüfung von Copy oder Tokens — das deckt design-verify ab.
+
+**Parallel:** Task 3 (anderer Screen, andere Komponentendatei).
 
 - [ ] **Step 1: Write the failing test**
 - [ ] **Step 2: Run test to verify it fails**

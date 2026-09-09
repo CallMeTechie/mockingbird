@@ -47,6 +47,23 @@ for n in 1 2 3; do
 	check "no data-ui-id constraint line in brief $n" "0" "$(grep -cF 'Jedes gebaute UI-Element trägt seine Manifest-ID' "$SANDBOX/brief-$n.md")"
 done
 
+echo "== preflight's Tests:/Parallel: lines survive the cut, per task =="
+# Both plugins write into the same '### Task N' block, and task-brief is what the
+# implementer actually receives. A design table inserted at the wrong place would
+# push these lines into the neighbouring brief, or drop them entirely.
+check "task 1 carries its Tests: budget" "1" "$(grep -c '^\*\*Tests:\*\* Ein Integrationstest' "$SANDBOX/brief-1.md")"
+check "task 1 carries its Parallel: line" "1" "$(grep -c '^\*\*Parallel:\*\* keine' "$SANDBOX/brief-1.md")"
+check "task 2 carries its Tests: budget" "1" "$(grep -c '^\*\*Tests:\*\* Ein Rendertest je Manifest-Zustand' "$SANDBOX/brief-2.md")"
+check "task 2 carries its Parallel: line" "1" "$(grep -c '^\*\*Parallel:\*\* Task 3' "$SANDBOX/brief-2.md")"
+check "task 1 does not carry task 2's budget" "0" "$(grep -c 'Rendertest je Manifest-Zustand' "$SANDBOX/brief-1.md")"
+check "task 2 does not carry task 1's budget" "0" "$(grep -c 'Ein Integrationstest' "$SANDBOX/brief-2.md")"
+check "task 3 carries neither task's budget" "0" "$(grep -cE 'Ein Integrationstest|Rendertest je Manifest-Zustand' "$SANDBOX/brief-3.md")"
+
+# Channel C sits BEFORE the two lines: the multi-line table between two one-liners
+# makes every later design-sync move lines that did not change.
+check "task 2: design table comes before the Tests: line" "1" \
+	"$(awk '/^\*\*Design:\*\*/{d=NR} /^\*\*Tests:\*\*/{t=NR} END{print (d && t && d < t) ? 1 : 0}' "$SANDBOX/brief-2.md")"
+
 echo "== Channel C (per-task Design table) reaches exactly its own brief =="
 check_rc "task 1 brief non-empty" 0 test -s "$SANDBOX/brief-1.md"
 check "task 1 has no UI design table" "0" "$(grep -cF 'UI-ORDERS-TABLE' "$SANDBOX/brief-1.md")"
